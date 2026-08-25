@@ -12,13 +12,18 @@
 MFRC522 rfid(SS_PIN, RST_PIN);
 Servo miTalanquera;
 
-// --- Variables para control de tiempo (RFID) ---
+// --- Variables para control de tiempo (sin delay) ---
 unsigned long ultimoTiempoLectura = 0;
 const unsigned long intervaloCooldown = 1500; 
 
-// --- Variables de Estado ---
+// NUEVAS variables para el tiempo ciego de la talanquera
+unsigned long tiempoInicioApertura = 0;
+const unsigned long tiempoCiego = 3000; // 3 segundos de gracia antes de leer el sensor
+
+// --- Estados de la Garita ---
 enum EstadoGarita {
   ESPERANDO_CAMION,
+  TIEMPO_CIEGO_ARRANQUE,
   TALANQUERA_ABIERTA,
   CAMION_CRUZANDO
 };
@@ -27,17 +32,12 @@ EstadoGarita estadoActual = ESPERANDO_CAMION;
 
 void setup() {
   Serial.begin(9600);
-
-  // Inicializar pines
   pinMode(PIN_SENSOR_IR, INPUT);
   pinMode(53, OUTPUT);
   digitalWrite(53, HIGH);
 
-  // Inicializar SPI y RFID
   SPI.begin();
   rfid.PCD_Init();
-
-  // Inicializar Servo (Talanquera cerrada por defecto)
   miTalanquera.attach(PIN_SERVO);
   cerrarTalanquera();
 
@@ -46,7 +46,6 @@ void setup() {
 }
 
 void loop() {
-  // Leemos el sensor infrarrojo en cada ciclo (LOW = Camión detectado)
   int estadoSensor = digitalRead(PIN_SENSOR_IR);
 
   // ==========================================
@@ -56,46 +55,51 @@ void loop() {
   switch (estadoActual) {
     
     case ESPERANDO_CAMION:
-      // Solo en este estado nos importa leer el RFID
       if (millis() - ultimoTiempoLectura >= intervaloCooldown) {
         if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
           
           ultimoTiempoLectura = millis();
           Serial.println("\n[1] Camion detectado (RFID)");
           
-          // Limpiar comunicación
           rfid.PICC_HaltA();
           rfid.PCD_StopCrypto1();
 
-          // Abrir y cambiar de estado
           abrirTalanquera();
-          estadoActual = TALANQUERA_ABIERTA;
-          Serial.println("[2] Talanquera abierta. Esperando que el camion avance...");
+          
+          // Guardamos el momento exacto en que se abrió y pasamos al tiempo ciego
+          tiempoInicioApertura = millis();
+          estadoActual = TIEMPO_CIEGO_ARRANQUE;
+          Serial.println("[2] Talanquera abierta. Dando 3 segundos de gracia al conductor...");
         }
       }
       break;
 
+    case TIEMPO_CIEGO_ARRANQUE:
+      // Ignoramos el sensor por 3 segundos para darle tiempo al camión de avanzar
+      if (millis() - tiempoInicioApertura >= tiempoCiego) {
+        Serial.println("[3] Tiempo ciego terminado. Activando lectura del sensor infrarrojo.");
+        estadoActual = TALANQUERA_ABIERTA;
+      }
+      break;
+
     case TALANQUERA_ABIERTA:
-      // Esperamos hasta que el sensor IR detecte que el camión empezó a cruzar
+      // Ahora sí, esperamos a que el sensor detecte físicamente la masa del camión
       if (estadoSensor == LOW) {
-        Serial.println("[3] Camion cruzando la garita (Sensor IR bloqueado).");
+        Serial.println("[4] Camion detectado cruzando la garita.");
         estadoActual = CAMION_CRUZANDO;
       }
       break;
 
     case CAMION_CRUZANDO:
-      // La talanquera sigue abierta. 
-      // Esperamos a que el sensor IR vuelva a HIGH (el camión ya pasó completamente)
+      // Esperamos a que el sensor vuelva a HIGH (el camión terminó de pasar)
       if (estadoSensor == HIGH) {
-        Serial.println("[4] Camion libero el sensor. Cerrando talanquera.");
+        Serial.println("[5] Camion libero el sensor. Cerrando talanquera.");
         cerrarTalanquera();
-        estadoActual = ESPERANDO_CAMION; // Volvemos al inicio
+        estadoActual = ESPERANDO_CAMION; 
         Serial.println("===== LISTO PARA EL SIGUIENTE CAMION =====");
       }
       break;
   }
-
-  // Aqui deben continuar
 }
 
 // --- Funciones de acción ---
