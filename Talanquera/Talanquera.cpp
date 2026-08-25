@@ -15,10 +15,24 @@ Servo miTalanquera;
 // --- Variables para control de tiempo (sin delay) ---
 unsigned long ultimoTiempoLectura = 0;
 const unsigned long intervaloCooldown = 1500; 
-
-// NUEVAS variables para el tiempo ciego de la talanquera
 unsigned long tiempoInicioApertura = 0;
-const unsigned long tiempoCiego = 3000; // 3 segundos de gracia antes de leer el sensor
+const unsigned long tiempoCiego = 3000; 
+
+// --- MODELO DE DATOS: CAMIÓN ---
+// Según los requerimientos de PORTUS Fase 1
+struct Camion {
+  String rfid;
+  String placa;
+  bool autorizadoLocalmente;
+};
+
+// Base de datos pre-cargada con tus 3 tarjetas
+Camion baseDatosCamiones[] = {
+  {"EA225305", "C-101", true},   // Tarjeta 1: Permitida
+  {"99A08729", "C-202", true},   // Tarjeta 2: Permitida
+  {"E116F9B0", "C-303", false}   // Tarjeta 3: Denegada 
+};
+const int TOTAL_CAMIONES = 3;
 
 // --- Estados de la Garita ---
 enum EstadoGarita {
@@ -27,7 +41,6 @@ enum EstadoGarita {
   TALANQUERA_ABIERTA,
   CAMION_CRUZANDO
 };
-
 EstadoGarita estadoActual = ESPERANDO_CAMION;
 
 void setup() {
@@ -59,41 +72,72 @@ void loop() {
         if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
           
           ultimoTiempoLectura = millis();
-          Serial.println("\n[1] Camion detectado (RFID)");
           
+          // 1. Extraer el UID y convertirlo a String (sin los dos puntos para que sea más fácil comparar)
+          String uidLeido = "";
+          for (byte i = 0; i < rfid.uid.size; i++) {
+            if (rfid.uid.uidByte[i] < 0x10) uidLeido += "0";
+            uidLeido += String(rfid.uid.uidByte[i], HEX);
+          }
+          uidLeido.toUpperCase(); // Convertir a mayúsculas para asegurar la coincidencia
+
+          Serial.println("\n[1] Tarjeta detectada: " + uidLeido);
+          
+          // Limpiar comunicación
           rfid.PICC_HaltA();
           rfid.PCD_StopCrypto1();
 
-          abrirTalanquera();
-          
-          // Guardamos el momento exacto en que se abrió y pasamos al tiempo ciego
-          tiempoInicioApertura = millis();
-          estadoActual = TIEMPO_CIEGO_ARRANQUE;
-          Serial.println("[2] Talanquera abierta. Dando 3 segundos de gracia al conductor...");
+          // 2. Validar en la base de datos local
+          bool camionEncontrado = false;
+          bool accesoPermitido = false;
+          String placaDetectada = "";
+
+          for (int i = 0; i < TOTAL_CAMIONES; i++) {
+            if (baseDatosCamiones[i].rfid == uidLeido) {
+              camionEncontrado = true;
+              placaDetectada = baseDatosCamiones[i].placa;
+              accesoPermitido = baseDatosCamiones[i].autorizadoLocalmente;
+              break; // Rompemos el ciclo porque ya lo encontramos
+            }
+          }
+
+          // 3. Tomar decisión
+          if (camionEncontrado) {
+            Serial.println("Camion identificado: Placa " + placaDetectada);
+            
+            if (accesoPermitido) {
+              Serial.println("ACCESO AUTORIZADO. Abriendo garita...");
+              abrirTalanquera();
+              tiempoInicioApertura = millis();
+              estadoActual = TIEMPO_CIEGO_ARRANQUE;
+            } else {
+              Serial.println("ACCESO DENEGADO: El camion no esta autorizado localmente.");
+              // La talanquera permanece cerrada, mostrando la causa del rechazo según la rúbrica
+            }
+          } else {
+            Serial.println("ACCESO DENEGADO: RFID no reconocido.");
+            // Igual, la talanquera permanece cerrada
+          }
         }
       }
       break;
 
     case TIEMPO_CIEGO_ARRANQUE:
-      // Ignoramos el sensor por 3 segundos para darle tiempo al camión de avanzar
       if (millis() - tiempoInicioApertura >= tiempoCiego) {
-        Serial.println("[3] Tiempo ciego terminado. Activando lectura del sensor infrarrojo.");
         estadoActual = TALANQUERA_ABIERTA;
       }
       break;
 
     case TALANQUERA_ABIERTA:
-      // Ahora sí, esperamos a que el sensor detecte físicamente la masa del camión
       if (estadoSensor == LOW) {
-        Serial.println("[4] Camion detectado cruzando la garita.");
+        Serial.println("[*] Camion cruzando la garita.");
         estadoActual = CAMION_CRUZANDO;
       }
       break;
 
     case CAMION_CRUZANDO:
-      // Esperamos a que el sensor vuelva a HIGH (el camión terminó de pasar)
       if (estadoSensor == HIGH) {
-        Serial.println("[5] Camion libero el sensor. Cerrando talanquera.");
+        Serial.println("[*] Camion libero el sensor. Cerrando talanquera.");
         cerrarTalanquera();
         estadoActual = ESPERANDO_CAMION; 
         Serial.println("===== LISTO PARA EL SIGUIENTE CAMION =====");
