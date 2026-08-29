@@ -9,4 +9,5 @@ bool hayCamionEnGarita();
 String obtenerUidLeido();
 void abrirTalanquera();
 void cerrarTalanquera();
+bool nuevoIngresoAutorizado(); // true una vez, cuando se autoriza el acceso
 #endif

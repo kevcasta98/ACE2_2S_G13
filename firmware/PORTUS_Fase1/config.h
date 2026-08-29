@@ -30,4 +30,10 @@
 #define MIN_OPERACIONES_PRECARGADAS 6
 #define MAX_OPERACIONES_PRECARGADAS 8
 
+// config.h — agregar estas líneas
+// --- LCD I2C (Garita) --- SDA=20, SCL=21 en el Mega (fijos por hardware)
+#define LCD_DIRECCION_I2C 0x27
+#define LCD_COLUMNAS 16
+#define LCD_FILAS 2
+
 #endif
