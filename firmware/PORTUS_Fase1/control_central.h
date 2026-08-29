@@ -5,4 +5,8 @@
 
 void inicializarControlCentral();
 void actualizarControlCentral();
+
+// útiles para la consola de supervisión
+int totalTurnosActivos();
+Turno obtenerTurno(int indice);
 #endif
