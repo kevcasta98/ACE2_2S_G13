@@ -29,7 +29,7 @@ Finalmente, se realizó el montaje completo sobre la base de la maqueta: se fija
 | Jose Javier Quan García               | 202001952 | Armado de grúa y código de la misma |
 | Kevin Eduardo Castañeda Hernández     | 201901801 | Talanquera de entrada y salida      |
 | Selvin Raúl Chuquiej Andrade          | 202405516 | Diseño de maqueta, diseños 3D       |
-| Manuel Orlando Balcarcel Tixta        |           | Construccion de Maqueta y pesaje    |
+| Manuel Orlando Balcarcel Tixta        | 202400653          | Construccion de Maqueta y pesaje    |
 
 ---
 
