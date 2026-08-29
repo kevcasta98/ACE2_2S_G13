@@ -1,190 +1,145 @@
-#include <SPI.h>
-#include <MFRC522.h>
 #include <Servo.h>
 
 // --- Definiciones de Pines ---
-#define SS_PIN 53
-#define RST_PIN 5
-#define PIN_SERVO 9
-#define PIN_SENSOR_IR 8
+#define PIN_SERVO_1 9     
+#define PIN_SERVO_2 10    
+#define PIN_SENSOR_IR 7   
 
-// Pines del Semáforo (Puedes usar los pines PWM o digitales libres)
-#define PIN_LED_ROJO 5
-#define PIN_LED_AMARILLO 6
-#define PIN_LED_VERDE 7
+// Pines para los Semáforos 
+#define PIN_LATCH 8       
+#define PIN_CLOCK 11     
+#define PIN_DATA 12      
+
+// --- Estados Binarios de los Colores ---
+const byte APAGADO =  B00000000;
+const byte ROJO =     B00000001; 
+const byte VERDE =    B00000010;
+const byte AMARILLO = B00000011;
 
 // --- Creación de Objetos ---
-MFRC522 rfid(SS_PIN, RST_PIN);
-Servo miTalanquera;
+Servo talanquera1;
+Servo talanquera2;
 
-// --- Variables para control de tiempo (sin delay) ---
-unsigned long ultimoTiempoLectura = 0;
-const unsigned long intervaloCooldown = 1500; 
+// --- Variables para control de tiempo e iteración ---
+unsigned long tiempoReferencia = 0; 
+const unsigned long tiempoSimulacionPesaje = 4000; 
+const unsigned long tiempoSalidaCamion = 4000;     
+const unsigned long tiempoReinicioCiclo = 2000;    
 
-unsigned long tiempoInicioApertura = 0;
-const unsigned long tiempoCiego = 3000; 
+bool turnoIzquierda = true; 
 
-// Variables para el efecto del semáforo amarillo
-unsigned long tiempoInicioValidacion = 0;
-const unsigned long tiempoValidacion = 1500; // 1.5 seg de luz amarilla
-String uidPendiente = "";
-
-// --- MODELO DE DATOS: CAMIÓN ---
-struct Camion {
-  String rfid;
-  String placa;
-  bool autorizadoLocalmente;
+// --- Máquina de Estados del Sistema ---
+enum EstadoSistema {
+  ESPERANDO_INGRESO,
+  CRUZANDO_INGRESO,
+  SIMULANDO_PESAJE,
+  SALIDA_AUTORIZADA,
+  REINICIANDO_SISTEMA
 };
-
-Camion baseDatosCamiones[] = {
-  {"EA225305", "C-101", true},
-  {"99A08729", "C-202", true},
-  {"E116F9B0", "C-303", false}
-};
-const int TOTAL_CAMIONES = 3;
-
-// --- Estados de la Garita ---
-enum EstadoGarita {
-  ESPERANDO_CAMION,
-  VALIDANDO_ACCESO,
-  TIEMPO_CIEGO_ARRANQUE,
-  TALANQUERA_ABIERTA,
-  CAMION_CRUZANDO
-};
-EstadoGarita estadoActual = ESPERANDO_CAMION;
+EstadoSistema estadoActual = ESPERANDO_INGRESO;
 
 void setup() {
   Serial.begin(9600);
   pinMode(PIN_SENSOR_IR, INPUT);
   
-  // Configurar pines del semáforo
-  pinMode(PIN_LED_ROJO, OUTPUT);
-  pinMode(PIN_LED_AMARILLO, OUTPUT);
-  pinMode(PIN_LED_VERDE, OUTPUT);
+  pinMode(PIN_LATCH, OUTPUT);
+  pinMode(PIN_CLOCK, OUTPUT);
+  pinMode(PIN_DATA, OUTPUT);
 
-  pinMode(53, OUTPUT);
-  digitalWrite(53, HIGH);
+  talanquera1.attach(PIN_SERVO_1);
+  talanquera2.attach(PIN_SERVO_2);
 
-  SPI.begin();
-  rfid.PCD_Init();
-  miTalanquera.attach(PIN_SERVO);
-  cerrarTalanquera();
+  // Configuración Inicial
+  centrarTalanquera2();
+  abrirTalanquera1();
+  actualizarSemaforos(VERDE, ROJO); 
 
-  // Estado inicial: Vehículo debe permanecer detenido[cite: 1]
-  actualizarSemaforo(HIGH, LOW, LOW);
-
-  Serial.println("===== SISTEMA DE GARITA PORTUS INICIADO =====");
-  Serial.println("Semaforo: ROJO. Esperando lectura RFID...");
+  Serial.println("===== SISTEMA DE PESAJE INICIADO =====");
+  Serial.println("Talanquera 1 ABIERTA (90 grados). Esperando vehiculo...");
 }
 
 void loop() {
-  int estadoSensor = digitalRead(PIN_SENSOR_IR);
+  int estadoSensorIR = digitalRead(PIN_SENSOR_IR);
   
   switch (estadoActual) {
     
-    case ESPERANDO_CAMION:
-      if (millis() - ultimoTiempoLectura >= intervaloCooldown) {
-        if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-          
-          ultimoTiempoLectura = millis();
-          
-          // Extraer UID
-          uidPendiente = "";
-          for (byte i = 0; i < rfid.uid.size; i++) {
-            if (rfid.uid.uidByte[i] < 0x10) uidPendiente += "0";
-            uidPendiente += String(rfid.uid.uidByte[i], HEX);
-          }
-          uidPendiente.toUpperCase(); 
-
-          rfid.PICC_HaltA();
-          rfid.PCD_StopCrypto1();
-
-          // Cambiar a luz amarilla: Estación realizando validación[cite: 1]
-          actualizarSemaforo(LOW, HIGH, LOW);
-          tiempoInicioValidacion = millis();
-          estadoActual = VALIDANDO_ACCESO;
-          
-          Serial.println("\n[1] Tarjeta leida. Semaforo AMARILLO (Validando...)");
-        }
+    case ESPERANDO_INGRESO:
+      if (estadoSensorIR == LOW) { 
+        Serial.println("[*] Vehiculo detectado. Cruzando Talanquera 1...");
+        estadoActual = CRUZANDO_INGRESO;
       }
       break;
 
-    case VALIDANDO_ACCESO:
-      // Esperamos 1.5 segundos para que la luz amarilla sea visible
-      if (millis() - tiempoInicioValidacion >= tiempoValidacion) {
+    case CRUZANDO_INGRESO:
+      if (estadoSensorIR == HIGH) { 
+        Serial.println("[*] Vehiculo paso. Cerrando T1 e iniciando pesaje...");
         
-        bool camionEncontrado = false;
-        bool accesoPermitido = false;
-        String placaDetectada = "";
+        cerrarTalanquera1();
+        actualizarSemaforos(ROJO, AMARILLO); 
+        
+        tiempoReferencia = millis();
+        estadoActual = SIMULANDO_PESAJE; 
+      }
+      break;
 
-        for (int i = 0; i < TOTAL_CAMIONES; i++) {
-          if (baseDatosCamiones[i].rfid == uidPendiente) {
-            camionEncontrado = true;
-            placaDetectada = baseDatosCamiones[i].placa;
-            accesoPermitido = baseDatosCamiones[i].autorizadoLocalmente;
-            break; 
-          }
-        }
-
-        if (camionEncontrado && accesoPermitido) {
-          Serial.println("ACCESO AUTORIZADO: Placa " + placaDetectada);
-          // Operación autorizada: Luz verde y abrir[cite: 1]
-          actualizarSemaforo(LOW, LOW, HIGH);
-          abrirTalanquera();
-          tiempoInicioApertura = millis();
-          estadoActual = TIEMPO_CIEGO_ARRANQUE;
+    case SIMULANDO_PESAJE:
+      if (millis() - tiempoReferencia >= tiempoSimulacionPesaje) {
+        actualizarSemaforos(ROJO, VERDE); 
+        
+        if (turnoIzquierda) {
+          Serial.println("[*] Pesaje validado. Semáforo 2 VERDE. Dirigiendo a la IZQUIERDA.");
+          apuntarIzquierdaTalanquera2();
         } else {
-          // Si no está registrado o no está autorizado, vuelve a rojo
-          if (!camionEncontrado) {
-            Serial.println("RECHAZO: RFID no reconocido.");
-          } else {
-            Serial.println("RECHAZO: Camion no autorizado.");
-          }
-          actualizarSemaforo(HIGH, LOW, LOW);
-          estadoActual = ESPERANDO_CAMION;
+          Serial.println("[*] Pesaje validado. Semáforo 2 VERDE. Dirigiendo a la DERECHA.");
+          apuntarDerechaTalanquera2();
         }
-      }
-      break;
-
-    case TIEMPO_CIEGO_ARRANQUE:
-      if (millis() - tiempoInicioApertura >= tiempoCiego) {
-        estadoActual = TALANQUERA_ABIERTA;
-      }
-      break;
-
-    case TALANQUERA_ABIERTA:
-      if (estadoSensor == LOW) {
-        Serial.println("[*] Camion cruzando la garita.");
-        estadoActual = CAMION_CRUZANDO;
-      }
-      break;
-
-    case CAMION_CRUZANDO:
-      if (estadoSensor == HIGH) {
-        Serial.println("[*] Camion libero el sensor. Cerrando talanquera.");
-        cerrarTalanquera();
         
-        // Vuelve a rojo al cerrar
-        actualizarSemaforo(HIGH, LOW, LOW);
-        estadoActual = ESPERANDO_CAMION; 
-        Serial.println("Semaforo: ROJO. ===== LISTO PARA EL SIGUIENTE CAMION =====");
+        tiempoReferencia = millis();
+        estadoActual = SALIDA_AUTORIZADA;
+      }
+      break;
+
+    case SALIDA_AUTORIZADA:
+      if (millis() - tiempoReferencia >= tiempoSalidaCamion) {
+        Serial.println("[*] Vehiculo salio. Centrando sistema...");
+        
+        centrarTalanquera2();
+        actualizarSemaforos(ROJO, ROJO); 
+        
+        turnoIzquierda = !turnoIzquierda; 
+        
+        tiempoReferencia = millis();
+        estadoActual = REINICIANDO_SISTEMA;
+      }
+      break;
+
+    case REINICIANDO_SISTEMA:
+      if (millis() - tiempoReferencia >= tiempoReinicioCiclo) {
+        Serial.println("===== LISTO PARA NUEVO VEHICULO =====");
+        
+        abrirTalanquera1();
+        actualizarSemaforos(VERDE, ROJO);
+        
+        estadoActual = ESPERANDO_INGRESO;
       }
       break;
   }
 }
 
-// --- Funciones de acción ---
-void abrirTalanquera() {
-  miTalanquera.write(90); 
-}
+// --- Funciones de Control de Hardware ---
 
-void cerrarTalanquera() {
-  miTalanquera.write(0); 
-}
+void abrirTalanquera1() { talanquera1.write(90); }
+void cerrarTalanquera1() { talanquera1.write(0); }
 
-// Función auxiliar para controlar las 3 luces fácilmente
-void actualizarSemaforo(int rojo, int amarillo, int verde) {
-  digitalWrite(PIN_LED_ROJO, rojo);
-  digitalWrite(PIN_LED_AMARILLO, amarillo);
-  digitalWrite(PIN_LED_VERDE, verde);
+// Talanquera 2: 90 grados es el centro
+void centrarTalanquera2() { talanquera2.write(67); }
+void apuntarIzquierdaTalanquera2() { talanquera2.write(150); }
+void apuntarDerechaTalanquera2() { talanquera2.write(0); }
+
+// Función para semáforos
+void actualizarSemaforos(byte estadoTalanquera1, byte estadoTalanquera2) {
+  digitalWrite(PIN_LATCH, LOW);
+  shiftOut(PIN_DATA, PIN_CLOCK, MSBFIRST, estadoTalanquera2);
+  shiftOut(PIN_DATA, PIN_CLOCK, MSBFIRST, estadoTalanquera1);
+  digitalWrite(PIN_LATCH, HIGH);
 }
