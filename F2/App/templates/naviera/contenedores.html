@@ -2,9 +2,33 @@
 {% block titulo %}Mis contenedores{% endblock %}
 {% block encabezado %}Mis contenedores{% endblock %}
 {% block contenido %}
-<div class="alert alert-info small">Solo se muestran los contenedores de tu naviera ({{ rol_sesion }} — sesión actual). Esta separación deberá validarse en el servidor.</div>
+
+<div class="alert alert-info small">
+  Solo se muestran los contenedores de tu naviera ({{ entidad_sesion }}).
+  Esta separación se valida en el servidor.
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-auto">
+    <input class="form-control form-control-sm" name="q" value="{{ q or '' }}" placeholder="Buscar contenedor...">
+  </div>
+  <div class="col-auto">
+    <select class="form-select form-select-sm" name="estado">
+      <option value="">Todos los estados</option>
+      <option value="Ocupada" {% if estado_filtro == 'Ocupada' %}selected{% endif %}>Ocupada</option>
+      <option value="Bloqueada" {% if estado_filtro == 'Bloqueada' %}selected{% endif %}>Bloqueada</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary btn-sm">Filtrar</button>
+  </div>
+</form>
+
 <table class="table table-sm table-striped">
-  <thead><tr><th>Contenedor</th><th>Posición</th><th>Nivel</th><th>Estado</th><th>Autorización</th><th>Permanencia (h)</th></tr></thead>
+  <thead><tr>
+    <th>Contenedor</th><th>Posición</th><th>Nivel</th><th>Estado</th>
+    <th>Autorización</th><th>Permanencia (h)</th>
+  </tr></thead>
   <tbody>
   {% for c in contenedores %}
     <tr>
@@ -17,4 +41,5 @@
   {% endfor %}
   </tbody>
 </table>
+
 {% endblock %}

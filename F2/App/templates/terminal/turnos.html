@@ -2,14 +2,25 @@
 {% block titulo %}Turnos{% endblock %}
 {% block encabezado %}Turnos{% endblock %}
 {% block contenido %}
+
 <form class="row g-2 mb-3" method="get">
   <div class="col-auto">
-    <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+    <select name="estado" class="form-select form-select-sm">
       <option value="">Todos los estados</option>
       {% for e in ["EnGarita","EnPesajeEntrada","EnRuta","EnTransferencia","EnPesajeSalida","EnSalida","Retenido","Cerrado","Anulado"] %}
       <option value="{{ e }}" {% if filtro_estado == e %}selected{% endif %}>{{ e }}</option>
       {% endfor %}
     </select>
+  </div>
+  <div class="col-auto">
+    <select name="tipo" class="form-select form-select-sm">
+      <option value="">Todos los tipos</option>
+      <option value="Deposito" {% if filtro_tipo == 'Deposito' %}selected{% endif %}>Depósito</option>
+      <option value="Retiro" {% if filtro_tipo == 'Retiro' %}selected{% endif %}>Retiro</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary btn-sm">Filtrar</button>
   </div>
 </form>
 
@@ -27,7 +38,10 @@
       <td>{{ t.peso_salida or "-" }}</td><td>{{ t.posicion_patio }}</td><td>{{ t.tiempo }}</td>
       <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('terminal_turno_detalle', turno_id=t.id) }}">Ver detalle</a></td>
     </tr>
+  {% else %}
+    <tr><td colspan="12" class="text-muted">No hay turnos que coincidan con los filtros.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+
 {% endblock %}

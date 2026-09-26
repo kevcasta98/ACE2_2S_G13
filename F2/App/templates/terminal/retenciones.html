@@ -2,6 +2,7 @@
 {% block titulo %}Retenciones{% endblock %}
 {% block encabezado %}Retenciones{% endblock %}
 {% block contenido %}
+
 <table class="table table-sm">
   <thead><tr>
     <th>ID</th><th>Turno</th><th>Vehículo</th><th>Causa</th><th>Momento</th><th>Plaza</th>
@@ -17,19 +18,86 @@
       <td><span class="badge {{ 'bg-warning text-dark' if r.estado == 'Abierta' else 'bg-success' }}">{{ r.estado }}</span></td>
       <td>
         {% if r.estado == "Abierta" and r.rol_facultado == "TERMINAL" %}
-        <form method="post" class="d-flex gap-1">
-          <input type="hidden" name="ret_id" value="{{ r.id }}">
-          <button class="btn btn-sm btn-outline-success" name="accion" value="Aclarar">Aclarar</button>
-          <button class="btn btn-sm btn-outline-primary" name="accion" value="Corregir">Corregir</button>
-          <button class="btn btn-sm btn-outline-danger" name="accion" value="Rechazar">Rechazar</button>
-        </form>
+          <button class="btn btn-sm btn-outline-success"
+                  data-bs-toggle="modal" data-bs-target="#modalResolver"
+                  data-ret="{{ r.id }}" data-accion="Aclarar">Aclarar</button>
+          <button class="btn btn-sm btn-outline-primary"
+                  data-bs-toggle="modal" data-bs-target="#modalResolver"
+                  data-ret="{{ r.id }}" data-accion="Corregir">Corregir</button>
+          <button class="btn btn-sm btn-outline-danger"
+                  data-bs-toggle="modal" data-bs-target="#modalResolver"
+                  data-ret="{{ r.id }}" data-accion="Rechazar">Rechazar</button>
         {% elif r.estado == "Abierta" %}
-        <span class="text-muted small">Solo {{ r.rol_facultado }} puede resolverla</span>
+          <span class="text-muted small">Solo {{ r.rol_facultado }} puede resolverla</span>
+        {% else %}
+          <span class="text-muted small">Resuelta: {{ r.resolucion or '-' }}</span>
         {% endif %}
       </td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
-<p class="small text-muted">Las acciones aquí son simuladas (memoria). El backend real deberá validar en servidor que solo el rol facultado según la causa pueda resolver, y exigir motivo en "Rechazar".</p>
+
+<p class="small text-muted">
+  El servidor valida que solo el rol facultado según la causa pueda resolver.
+  "Rechazar" exige motivo. "Corregir" es exclusivo de TERMINAL.
+</p>
+
+<!-- Modal único para resolver -->
+<div class="modal fade" id="modalResolver" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post" id="formResolver">
+      <div class="modal-header">
+        <h5 class="modal-title">Resolver retención <span id="retIdTxt"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="ret_id" id="retIdInput">
+        <input type="hidden" name="accion" id="accionInput">
+
+        <p>Acción: <strong id="accionTxt"></strong></p>
+
+        <div class="mb-2" id="motivoBloque">
+          <label class="form-label">Motivo (obligatorio al Rechazar)</label>
+          <input class="form-control" name="motivo" id="motivoInput">
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Observación (opcional)</label>
+          <textarea class="form-control" name="observacion"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Confirmar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('modalResolver');
+  modal.addEventListener('show.bs.modal', function (event) {
+    const btn = event.relatedTarget;
+    const retId = btn.getAttribute('data-ret');
+    const accion = btn.getAttribute('data-accion');
+
+    document.getElementById('retIdTxt').textContent = retId;
+    document.getElementById('retIdInput').value = retId;
+    document.getElementById('accionInput').value = accion;
+    document.getElementById('accionTxt').textContent = accion;
+
+    const motivoBloque = document.getElementById('motivoBloque');
+    const motivoInput = document.getElementById('motivoInput');
+    if (accion === 'Rechazar') {
+      motivoBloque.style.display = '';
+      motivoInput.required = true;
+    } else {
+      motivoBloque.style.display = 'none';
+      motivoInput.required = false;
+      motivoInput.value = '';
+    }
+  });
+</script>
+
 {% endblock %}

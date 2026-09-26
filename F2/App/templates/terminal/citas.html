@@ -2,6 +2,57 @@
 {% block titulo %}Citas{% endblock %}
 {% block encabezado %}Citas — Agenda del día (franjas de 15 min){% endblock %}
 {% block contenido %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header">Generar código de vinculación de transportista</div>
+      <div class="card-body">
+        <form method="post" class="d-flex gap-2">
+          <input type="hidden" name="accion" value="generar_codigo">
+          <select class="form-select form-select-sm" name="transportista" required>
+            <option value="">Seleccione transportista...</option>
+            {% for t in transportistas %}
+              <option value="{{ t.id }}">{{ t.nombre }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-primary btn-sm">Generar</button>
+        </form>
+
+        {% if nuevo_codigo %}
+        <div class="alert alert-success mt-3 mb-0">
+          <strong>Código generado:</strong>
+          <span class="badge bg-dark fs-6">{{ nuevo_codigo }}</span>
+          <br><small>Válido por 60 minutos. Úselo una sola vez.</small>
+        </div>
+        {% endif %}
+
+        {% if codigos %}
+        <hr>
+        <h6>Historial de códigos</h6>
+        <table class="table table-sm">
+          <thead><tr><th>Código</th><th>Transportista</th><th>Creado</th><th>Estado</th></tr></thead>
+          <tbody>
+          {% for c in codigos %}
+            <tr>
+              <td><code>{{ c.codigo }}</code></td>
+              <td>{{ c.transportista }}</td>
+              <td>{{ c.creado }}</td>
+              <td>
+                {% if c.usado %}<span class="badge bg-secondary">Usado</span>
+                {% else %}<span class="badge bg-success">Activo</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5>Agenda del día</h5>
 {% for f in agenda %}
 <div class="card mb-2">
   <div class="card-header d-flex justify-content-between">
@@ -20,5 +71,10 @@
   {% endif %}
 </div>
 {% endfor %}
-<p class="small text-muted">Datos ficticios. Las citas reales las crea el transportista desde el canal de mensajería (/cita).</p>
+
+<p class="small text-muted">
+  Los transportistas usan el código generado con <code>/vincular CODIGO</code> en el canal de mensajería.
+  Las citas reales se crean mediante el comando <code>/cita</code>.
+</p>
+
 {% endblock %}

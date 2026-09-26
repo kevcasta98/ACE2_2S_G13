@@ -2,10 +2,14 @@
 {% block titulo %}Manifiestos{% endblock %}
 {% block encabezado %}Manifiestos{% endblock %}
 {% block contenido %}
+
 <button class="btn btn-primary btn-sm mb-3" data-bs-toggle="modal" data-bs-target="#modalNuevo">Nuevo manifiesto</button>
 
 <table class="table table-sm table-striped">
-  <thead><tr><th>ID</th><th>Contenedor</th><th>Tipo</th><th>Peso decl.</th><th>Tolerancia</th><th>Transportista</th><th>Estado</th><th>Canal</th></tr></thead>
+  <thead><tr>
+    <th>ID</th><th>Contenedor</th><th>Tipo</th><th>Peso decl.</th><th>Tolerancia</th>
+    <th>Transportista</th><th>Estado</th><th>Canal</th>
+  </tr></thead>
   <tbody>
   {% for m in manifiestos %}
     <tr>
@@ -14,6 +18,8 @@
       <td><span class="badge bg-primary">{{ m.estado }}</span></td>
       <td>{% if m.canal %}<span class="badge {{ 'bg-success' if m.canal == 'Verde' else 'bg-danger' }}">{{ m.canal }}</span>{% else %}-{% endif %}</td>
     </tr>
+  {% else %}
+    <tr><td colspan="8" class="text-muted">No hay manifiestos declarados.</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -46,8 +52,10 @@
         <div class="mb-2">
           <label class="form-label">Transportista asignado</label>
           <select class="form-select" name="transportista" required>
-            <option value="TRANS-A">Transportista A</option>
-            <option value="TRANS-B">Transportista B</option>
+            <option value="">Seleccione...</option>
+            {% for t in transportistas %}
+              <option value="{{ t.id }}">{{ t.nombre }}</option>
+            {% endfor %}
           </select>
         </div>
         <div class="mb-2">
@@ -61,4 +69,5 @@
     </form>
   </div>
 </div>
+
 {% endblock %}

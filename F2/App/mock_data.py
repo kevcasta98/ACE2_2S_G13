@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Datos ficticios para desarrollar las interfaces web (Compañero 2) sin
-depender todavía de la Raspberry Pi ni del backend real (Compañero 1).
-
-Cuando el backend esté listo, esto se sustituye por llamadas HTTP/DB reales.
-Todas las estructuras siguen los campos exigidos en el documento "Fase 2 Portus".
+PORTUS - Datos ficticios para la Fase 2 (Compañero 2).
 """
 
 # ---------------------------------------------------------------------------
-# USUARIOS (5 roles, TRANSPORTISTA no tiene interfaz web)
+# USUARIOS
 # ---------------------------------------------------------------------------
 USUARIOS = {
     "operador1":  {"password": "1234", "rol": "TERMINAL",  "nombre": "Carlos Operador"},
@@ -19,7 +15,21 @@ USUARIOS = {
 }
 
 # ---------------------------------------------------------------------------
-# CONTENEDORES (patio)
+# TRANSPORTISTAS
+# ---------------------------------------------------------------------------
+TRANSPORTISTAS = [
+    {"id": "TRANS-A", "nombre": "Transportes Quetzal"},
+    {"id": "TRANS-B", "nombre": "Logística Maya"},
+    {"id": "TRANS-C", "nombre": "Carga Rápida del Sur"},
+]
+
+# ---------------------------------------------------------------------------
+# CÓDIGOS DE VINCULACIÓN (canal de mensajería)
+# ---------------------------------------------------------------------------
+CODIGOS_VINCULACION = []
+
+# ---------------------------------------------------------------------------
+# CONTENEDORES
 # ---------------------------------------------------------------------------
 CONTENEDORES = [
     {"id": "CONT-001", "naviera": "NAVIERA1", "peso_declarado": 18500, "posicion": "A1", "nivel": 1,
@@ -33,7 +43,7 @@ CONTENEDORES = [
 ]
 
 # ---------------------------------------------------------------------------
-# MANIFIESTOS (cadena NAVIERA -> AGENTE -> AUTORIDAD)
+# MANIFIESTOS
 # ---------------------------------------------------------------------------
 MANIFIESTOS = [
     {"id": "MAN-1001", "contenedor": "CONT-005", "naviera": "NAVIERA1", "tipo": "Deposito",
@@ -79,15 +89,27 @@ RETENCIONES = [
     {"id": "RET-01", "turno": "T-503", "vehiculo": "P-789GHI", "contenedor": "CONT-004",
      "causa": "RT01 - Discrepancia de peso al ingreso", "momento": "2026-09-25 06:35",
      "plaza": 1, "tiempo": "18 min", "peso_declarado": 19800, "peso_medido": 21400,
-     "diferencia_pct": 8.1, "rol_facultado": "TERMINAL", "estado": "Abierta"},
+     "diferencia_pct": 8.1, "rol_facultado": "TERMINAL", "estado": "Abierta",
+     "resolucion": None, "motivo": None, "observacion": None},
     {"id": "RET-02", "turno": "T-498", "vehiculo": "P-654MNO", "contenedor": "CONT-007",
      "causa": "RT03 - Canal rojo de selectivo", "momento": "2026-09-24 16:20",
      "plaza": 2, "tiempo": "resuelta", "peso_declarado": None, "peso_medido": None,
-     "diferencia_pct": None, "rol_facultado": "AUTORIDAD", "estado": "Resuelta"},
+     "diferencia_pct": None, "rol_facultado": "AUTORIDAD", "estado": "Resuelta",
+     "resolucion": "Aclarar", "motivo": None, "observacion": None},
+    {"id": "RET-03", "turno": "T-499", "vehiculo": "P-111AAA", "contenedor": "CONT-008",
+     "causa": "RT05 - Retención documental", "momento": "2026-09-25 10:00",
+     "plaza": 3, "tiempo": "5 min", "peso_declarado": None, "peso_medido": None,
+     "diferencia_pct": None, "rol_facultado": "AUTORIDAD", "estado": "Abierta",
+     "resolucion": None, "motivo": None, "observacion": None},
+    {"id": "RET-04", "turno": "T-500", "vehiculo": "P-222BBB", "contenedor": "CONT-009",
+     "causa": "RT04 - Llegada fuera de la ventana asignada", "momento": "2026-09-25 11:00",
+     "plaza": 2, "tiempo": "10 min", "peso_declarado": None, "peso_medido": None,
+     "diferencia_pct": None, "rol_facultado": "TERMINAL", "estado": "Abierta",
+     "resolucion": None, "motivo": None, "observacion": None},
 ]
 
 # ---------------------------------------------------------------------------
-# ALARMAS (catálogo AL01-AL14)
+# ALARMAS
 # ---------------------------------------------------------------------------
 ALARMAS = [
     {"id": "A-1", "codigo": "AL09", "descripcion": "Pesaje fuera de tolerancia", "severidad": "Media",
@@ -99,7 +121,7 @@ ALARMAS = [
 ]
 
 # ---------------------------------------------------------------------------
-# CITAS (agenda en franjas de 15 minutos)
+# CITAS
 # ---------------------------------------------------------------------------
 CITAS = [
     {"franja": "08:00 - 08:15", "capacidad": 2, "citas": [
@@ -111,7 +133,7 @@ CITAS = [
 ]
 
 # ---------------------------------------------------------------------------
-# MÉTRICAS mock (pestaña Reportes)
+# MÉTRICAS
 # ---------------------------------------------------------------------------
 METRICAS_MOCK = {
     "remociones_por_retiro": 0.33,
@@ -125,7 +147,7 @@ METRICAS_MOCK = {
 }
 
 # ---------------------------------------------------------------------------
-# GRÚA (estado + historial simplificado)
+# GRÚA
 # ---------------------------------------------------------------------------
 GRUA = {
     "estado": "En reposo",
