@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Citas{% endblock %}
+{% block encabezado %}Citas — Agenda del día (franjas de 15 min){% endblock %}
+{% block contenido %}
+{% for f in agenda %}
+<div class="card mb-2">
+  <div class="card-header d-flex justify-content-between">
+    <span>{{ f.franja }}</span>
+    <span class="text-muted small">{{ f.citas|length }} / {{ f.capacidad }} citas</span>
+  </div>
+  {% if f.citas %}
+  <ul class="list-group list-group-flush">
+    {% for c in f.citas %}
+    <li class="list-group-item d-flex justify-content-between">
+      <span>{{ c.transportista }} — {{ c.vehiculo }} — {{ c.contenedor }}</span>
+      <span class="badge {{ 'bg-success' if c.estado == 'Cumplida' else 'bg-danger' if c.estado == 'Vencida' else 'bg-secondary' }}">{{ c.estado }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endfor %}
+<p class="small text-muted">Datos ficticios. Las citas reales las crea el transportista desde el canal de mensajería (/cita).</p>
+{% endblock %}

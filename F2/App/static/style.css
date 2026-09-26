@@ -1,0 +1,4 @@
+.sidebar { min-height: calc(100vh - 56px); border-right: 1px solid #dee2e6; }
+.sidebar .nav-link { color: #333; padding: .5rem .75rem; border-radius: .375rem; }
+.sidebar .nav-link:hover { background: #e9ecef; }
+.card h6 { color: #6c757d; font-size: .8rem; text-transform: uppercase; }

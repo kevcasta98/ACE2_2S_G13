@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titulo %}Alarmas{% endblock %}
+{% block encabezado %}Alarmas{% endblock %}
+{% block contenido %}
+<h6>Activas</h6>
+<table class="table table-sm">
+  <thead><tr><th>Código</th><th>Descripción</th><th>Severidad</th><th>Origen</th><th>Momento</th><th></th></tr></thead>
+  <tbody>
+  {% for a in activas %}
+    <tr>
+      <td>{{ a.codigo }}</td><td>{{ a.descripcion }}</td>
+      <td><span class="badge {{ 'bg-danger' if a.severidad == 'Crítica' else 'bg-warning text-dark' if a.severidad == 'Media' else 'bg-info text-dark' }}">{{ a.severidad }}</span></td>
+      <td>{{ a.origen }}</td><td>{{ a.momento }}</td>
+      <td>
+        <form method="post"><input type="hidden" name="alarma_id" value="{{ a.id }}">
+        <button class="btn btn-sm btn-outline-secondary">Reconocer</button></form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Sin alarmas activas</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h6 class="mt-4">Históricas</h6>
+<table class="table table-sm">
+  <thead><tr><th>Código</th><th>Descripción</th><th>Severidad</th><th>Momento</th></tr></thead>
+  <tbody>
+  {% for a in historicas %}
+    <tr><td>{{ a.codigo }}</td><td>{{ a.descripcion }}</td><td>{{ a.severidad }}</td><td>{{ a.momento }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

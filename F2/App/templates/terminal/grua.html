@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Grúa{% endblock %}
+{% block encabezado %}Grúa{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h6>Estado actual</h6>
+      <p class="mb-1">Estado: <span class="badge bg-secondary">{{ grua.estado }}</span></p>
+      <p class="mb-1">Posición: {{ grua.posicion }}</p>
+      <p class="mb-0">Trabajo en curso: {{ grua.trabajo_actual or "Ninguno" }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h6>Cola de trabajos</h6>
+      <ol class="mb-0">
+        {% for w in grua.cola %}
+        <li>{{ w.tipo }} — turno {{ w.turno }}</li>
+        {% else %}
+        <li class="text-muted">Sin trabajos pendientes</li>
+        {% endfor %}
+      </ol>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h6>Ciclos completados</h6>
+      <p class="display-6 mb-0">{{ grua.ciclos_completados }}</p>
+      <small>Promedio: {{ grua.tiempo_promedio_ciclo_s }} s/ciclo</small>
+    </div></div>
+  </div>
+</div>
+
+<div class="mt-3">
+  <h6>Historial de fallas</h6>
+  <table class="table table-sm">
+    <thead><tr><th>Momento</th><th>Tipo</th></tr></thead>
+    <tbody>
+    {% for f in grua.fallas %}
+      <tr><td>{{ f.momento }}</td><td>{{ f.tipo }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<button class="btn btn-outline-secondary btn-sm" disabled>Exportar historial (CSV)</button>
+{% endblock %}

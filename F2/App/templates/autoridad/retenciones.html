@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Retenciones aduaneras{% endblock %}
+{% block encabezado %}Retenciones aduaneras (RT03 / RT05){% endblock %}
+{% block contenido %}
+<table class="table table-sm">
+  <thead><tr><th>ID</th><th>Turno</th><th>Vehículo</th><th>Causa</th><th>Estado</th><th>Acciones</th></tr></thead>
+  <tbody>
+  {% for r in retenciones %}
+    <tr>
+      <td>{{ r.id }}</td><td>{{ r.turno }}</td><td>{{ r.vehiculo }}</td><td>{{ r.causa }}</td>
+      <td><span class="badge {{ 'bg-warning text-dark' if r.estado == 'Abierta' else 'bg-success' }}">{{ r.estado }}</span></td>
+      <td>
+        {% if r.estado == "Abierta" %}
+        <form method="post" class="d-flex gap-1">
+          <input type="hidden" name="ret_id" value="{{ r.id }}">
+          <button class="btn btn-sm btn-outline-success" name="accion" value="Aclarar">Aclarar</button>
+          <button class="btn btn-sm btn-outline-danger" name="accion" value="Rechazar">Rechazar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">No hay retenciones aduaneras.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">La AUTORIDAD no tiene botón "Corregir" (exclusivo de TERMINAL), tal como exige el documento.</p>
+{% endblock %}

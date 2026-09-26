@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Declaraciones{% endblock %}
+{% block encabezado %}Declaraciones{% endblock %}
+{% block contenido %}
+<table class="table table-sm">
+  <thead><tr><th>Manifiesto</th><th>Contenedor</th><th>Naviera</th><th>Tipo</th><th>Peso decl.</th><th>Estado</th><th>Acciones</th></tr></thead>
+  <tbody>
+  {% for m in manifiestos %}
+    <tr>
+      <td>{{ m.id }}</td><td>{{ m.contenedor }}</td><td>{{ m.naviera }}</td><td>{{ m.tipo }}</td>
+      <td>{{ m.peso_declarado }}</td>
+      <td><span class="badge bg-primary">{{ m.estado }}</span></td>
+      <td>
+        <form method="post" class="d-flex gap-1">
+          <input type="hidden" name="man_id" value="{{ m.id }}">
+          {% if m.estado == "Pendiente declaración" %}
+          <button class="btn btn-sm btn-outline-primary" name="accion" value="presentar">Presentar declaración</button>
+          {% elif m.estado == "Declaración presentada" %}
+          <button class="btn btn-sm btn-outline-success" name="accion" value="solicitar_levante">Solicitar levante</button>
+          {% else %}
+          <span class="text-muted small">Sin acciones pendientes</span>
+          {% endif %}
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">"Presentar declaración" simula el formulario de declaración de mercancías (número de declaración, régimen, descripción, valor).</p>
+{% endblock %}

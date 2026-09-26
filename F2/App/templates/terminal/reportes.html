@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes{% endblock %}
+{% block encabezado %}Reportes — Métricas de operación{% endblock %}
+{% block contenido %}
+<form method="post" class="row g-2 align-items-end mb-4">
+  <div class="col-auto">
+    <label class="form-label small">Desde</label>
+    <input type="date" class="form-control form-control-sm" name="desde">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small">Hasta</label>
+    <input type="date" class="form-control form-control-sm" name="hasta">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small">Etiqueta de corrida</label>
+    <input type="text" class="form-control form-control-sm" name="etiqueta" placeholder="corrida de evaluación">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary btn-sm">Generar</button>
+  </div>
+</form>
+
+{% if metricas %}
+<div class="row g-3">
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>Remociones / retiro</h6><p class="display-6 mb-0">{{ metricas.remociones_por_retiro }}</p></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>Ciclos grúa / operación</h6><p class="display-6 mb-0">{{ metricas.ciclos_grua_por_operacion }}</p></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>Distancia total grúa</h6><p class="display-6 mb-0">{{ metricas.distancia_total_grua_m }} m</p></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>Tiempo prom. camión</h6><p class="display-6 mb-0">{{ metricas.tiempo_promedio_camion_min }} min</p></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>Tiempo prom. retención</h6><p class="display-6 mb-0">{{ metricas.tiempo_promedio_retencion_min }} min</p></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>Longitud máx. fila</h6><p class="display-6 mb-0">{{ metricas.longitud_maxima_fila }}</p></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <h6>% citas cumplidas</h6><p class="display-6 mb-0">{{ metricas.pct_citas_cumplidas }}%</p></div></div></div>
+</div>
+
+<h6 class="mt-4">Retenciones por causa</h6>
+<table class="table table-sm w-auto">
+  <thead><tr>{% for causa in metricas.retenciones_por_causa %}<th>{{ causa }}</th>{% endfor %}</tr></thead>
+  <tbody><tr>{% for v in metricas.retenciones_por_causa.values() %}<td>{{ v }}</td>{% endfor %}</tr></tbody>
+</table>
+<button class="btn btn-outline-secondary btn-sm" disabled>Exportar (CSV)</button>
+{% else %}
+<p class="text-muted">Selecciona un rango y presiona "Generar" para ver las métricas (datos ficticios).</p>
+{% endif %}
+{% endblock %}

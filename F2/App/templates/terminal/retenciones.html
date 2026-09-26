@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Retenciones{% endblock %}
+{% block encabezado %}Retenciones{% endblock %}
+{% block contenido %}
+<table class="table table-sm">
+  <thead><tr>
+    <th>ID</th><th>Turno</th><th>Vehículo</th><th>Causa</th><th>Momento</th><th>Plaza</th>
+    <th>Tiempo</th><th>Peso decl./medido</th><th>Rol facultado</th><th>Estado</th><th>Acciones</th>
+  </tr></thead>
+  <tbody>
+  {% for r in retenciones %}
+    <tr>
+      <td>{{ r.id }}</td><td>{{ r.turno }}</td><td>{{ r.vehiculo }}</td><td>{{ r.causa }}</td>
+      <td>{{ r.momento }}</td><td>{{ r.plaza }}</td><td>{{ r.tiempo }}</td>
+      <td>{% if r.peso_declarado %}{{ r.peso_declarado }} / {{ r.peso_medido }} ({{ r.diferencia_pct }}%){% else %}-{% endif %}</td>
+      <td>{{ r.rol_facultado }}</td>
+      <td><span class="badge {{ 'bg-warning text-dark' if r.estado == 'Abierta' else 'bg-success' }}">{{ r.estado }}</span></td>
+      <td>
+        {% if r.estado == "Abierta" and r.rol_facultado == "TERMINAL" %}
+        <form method="post" class="d-flex gap-1">
+          <input type="hidden" name="ret_id" value="{{ r.id }}">
+          <button class="btn btn-sm btn-outline-success" name="accion" value="Aclarar">Aclarar</button>
+          <button class="btn btn-sm btn-outline-primary" name="accion" value="Corregir">Corregir</button>
+          <button class="btn btn-sm btn-outline-danger" name="accion" value="Rechazar">Rechazar</button>
+        </form>
+        {% elif r.estado == "Abierta" %}
+        <span class="text-muted small">Solo {{ r.rol_facultado }} puede resolverla</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">Las acciones aquí son simuladas (memoria). El backend real deberá validar en servidor que solo el rol facultado según la causa pueda resolver, y exigir motivo en "Rechazar".</p>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Seguimiento{% endblock %}
+{% block encabezado %}Seguimiento{% endblock %}
+{% block contenido %}
+<table class="table table-sm">
+  <thead><tr><th>Manifiesto</th><th>Contenedor</th><th>Estado</th><th>Canal</th></tr></thead>
+  <tbody>
+  {% for m in manifiestos %}
+    <tr>
+      <td>{{ m.id }}</td><td>{{ m.contenedor }}</td>
+      <td><span class="badge bg-primary">{{ m.estado }}</span></td>
+      <td>{% if m.canal %}<span class="badge {{ 'bg-success' if m.canal == 'Verde' else 'bg-danger' }}">{{ m.canal }}</span>{% else %}-{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

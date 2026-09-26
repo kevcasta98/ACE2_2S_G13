@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Turnos{% endblock %}
+{% block encabezado %}Turnos{% endblock %}
+{% block contenido %}
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Todos los estados</option>
+      {% for e in ["EnGarita","EnPesajeEntrada","EnRuta","EnTransferencia","EnPesajeSalida","EnSalida","Retenido","Cerrado","Anulado"] %}
+      <option value="{{ e }}" {% if filtro_estado == e %}selected{% endif %}>{{ e }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<table class="table table-striped table-sm">
+  <thead><tr>
+    <th>Turno</th><th>Vehículo</th><th>Contenedor</th><th>Tipo</th><th>Estado</th>
+    <th>Estación</th><th>Peso decl.</th><th>Peso ing.</th><th>Peso sal.</th><th>Posición</th><th>Tiempo</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for t in turnos %}
+    <tr>
+      <td>{{ t.id }}</td><td>{{ t.vehiculo }}</td><td>{{ t.contenedor }}</td><td>{{ t.tipo }}</td>
+      <td><span class="badge bg-primary">{{ t.estado }}</span></td>
+      <td>{{ t.estacion }}</td><td>{{ t.peso_declarado }}</td><td>{{ t.peso_ingreso }}</td>
+      <td>{{ t.peso_salida or "-" }}</td><td>{{ t.posicion_patio }}</td><td>{{ t.tiempo }}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('terminal_turno_detalle', turno_id=t.id) }}">Ver detalle</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

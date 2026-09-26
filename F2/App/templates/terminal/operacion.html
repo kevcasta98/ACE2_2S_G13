@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block titulo %}Operación{% endblock %}
+{% block encabezado %}Operación — Sinóptico en vivo (datos ficticios){% endblock %}
+{% block contenido %}
+<div class="alert alert-info small">
+  Esta vista deberá alimentarse por <strong>suscripción MQTT</strong> (no por consultas periódicas) cuando se conecte al backend real.
+  Por ahora se muestra un estado ficticio fijo.
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="card text-bg-secondary"><div class="card-body">
+      <h6>Estado del enlace</h6>
+      <span class="badge bg-warning text-dark">Simulado (sin Raspberry Pi aún)</span>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <h6>Zona de espera</h6>
+      <p class="display-6 mb-0">2</p><small>vehículos</small>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <h6>Modo del sistema</h6>
+      <span class="badge bg-success">Operación normal</span>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <h6>Grúa</h6>
+      <span class="badge bg-secondary">{{ grua.estado }}</span>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Turnos activos</div>
+      <ul class="list-group list-group-flush">
+        {% for t in turnos if t.estado not in ["Cerrado", "Anulado"] %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ t.id }} — {{ t.vehiculo }} ({{ t.tipo }})</span>
+          <span class="badge bg-primary">{{ t.estado }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Retenciones abiertas</div>
+      <ul class="list-group list-group-flush">
+        {% for r in retenciones %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ r.id }} — {{ r.vehiculo }}</span>
+          <span class="text-muted small">{{ r.causa }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">Sin retenciones abiertas</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3 d-flex gap-2 flex-wrap">
+  <button class="btn btn-outline-danger btn-sm" disabled title="Requiere confirmación — conectar a backend">Abrir talanquera</button>
+  <button class="btn btn-outline-danger btn-sm" disabled title="Requiere confirmación — conectar a backend">Abrir puerta de salida</button>
+  <button class="btn btn-outline-secondary btn-sm" disabled>Suspender grúa</button>
+  <button class="btn btn-outline-secondary btn-sm" disabled>Modo mantenimiento</button>
+</div>
+<p class="small text-muted mt-2">Estos botones envían comandos remotos (AbrirTalanquera, GruaSuspender, etc.) — se activan cuando exista conexión real con el controlador.</p>
+{% endblock %}

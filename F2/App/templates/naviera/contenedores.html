@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}Mis contenedores{% endblock %}
+{% block encabezado %}Mis contenedores{% endblock %}
+{% block contenido %}
+<div class="alert alert-info small">Solo se muestran los contenedores de tu naviera ({{ rol_sesion }} — sesión actual). Esta separación deberá validarse en el servidor.</div>
+<table class="table table-sm table-striped">
+  <thead><tr><th>Contenedor</th><th>Posición</th><th>Nivel</th><th>Estado</th><th>Autorización</th><th>Permanencia (h)</th></tr></thead>
+  <tbody>
+  {% for c in contenedores %}
+    <tr>
+      <td>{{ c.id }}</td><td>{{ c.posicion }}</td><td>{{ c.nivel }}</td>
+      <td><span class="badge {{ 'bg-danger' if c.estado == 'Bloqueada' else 'bg-success' }}">{{ c.estado }}</span></td>
+      <td>{{ c.autorizacion }}</td><td>{{ c.permanencia_h }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">No tienes contenedores registrados.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

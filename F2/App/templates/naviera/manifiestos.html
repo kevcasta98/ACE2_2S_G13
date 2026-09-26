@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block titulo %}Manifiestos{% endblock %}
+{% block encabezado %}Manifiestos{% endblock %}
+{% block contenido %}
+<button class="btn btn-primary btn-sm mb-3" data-bs-toggle="modal" data-bs-target="#modalNuevo">Nuevo manifiesto</button>
+
+<table class="table table-sm table-striped">
+  <thead><tr><th>ID</th><th>Contenedor</th><th>Tipo</th><th>Peso decl.</th><th>Tolerancia</th><th>Transportista</th><th>Estado</th><th>Canal</th></tr></thead>
+  <tbody>
+  {% for m in manifiestos %}
+    <tr>
+      <td>{{ m.id }}</td><td>{{ m.contenedor }}</td><td>{{ m.tipo }}</td><td>{{ m.peso_declarado }}</td>
+      <td>{{ m.tolerancia }}%</td><td>{{ m.transportista }}</td>
+      <td><span class="badge bg-primary">{{ m.estado }}</span></td>
+      <td>{% if m.canal %}<span class="badge {{ 'bg-success' if m.canal == 'Verde' else 'bg-danger' }}">{{ m.canal }}</span>{% else %}-{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="modal fade" id="modalNuevo" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header"><h5 class="modal-title">Nuevo manifiesto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">Identificador del contenedor</label>
+          <input class="form-control" name="contenedor" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Tipo de operación</label>
+          <select class="form-select" name="tipo" required>
+            <option value="Deposito">Depósito</option>
+            <option value="Retiro">Retiro</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Peso declarado (gramos)</label>
+          <input type="number" class="form-control" name="peso_declarado" required min="1">
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Tolerancia (%) — opcional, por defecto 5%</label>
+          <input type="number" class="form-control" name="tolerancia" step="0.1">
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Transportista asignado</label>
+          <select class="form-select" name="transportista" required>
+            <option value="TRANS-A">Transportista A</option>
+            <option value="TRANS-B">Transportista B</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" name="observaciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

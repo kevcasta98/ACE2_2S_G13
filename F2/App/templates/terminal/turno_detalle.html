@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Detalle de turno{% endblock %}
+{% block encabezado %}Detalle del turno {{ turno.id if turno else "" }}{% endblock %}
+{% block contenido %}
+{% if not turno %}
+  <div class="alert alert-warning">Turno no encontrado.</div>
+{% else %}
+<p><a href="{{ url_for('terminal_turnos') }}">&larr; Volver a Turnos</a></p>
+<ul class="list-group mb-3">
+  <li class="list-group-item">Vehículo: <strong>{{ turno.vehiculo }}</strong> — Transportista: {{ turno.transportista }}</li>
+  <li class="list-group-item">Contenedor: {{ turno.contenedor }} — Tipo: {{ turno.tipo }}</li>
+  <li class="list-group-item">Estado actual: <span class="badge bg-primary">{{ turno.estado }}</span></li>
+</ul>
+<h5>Línea de tiempo</h5>
+<table class="table table-sm">
+  <thead><tr><th>Hora</th><th>Origen</th><th>Evento</th><th>Valor</th></tr></thead>
+  <tbody>
+  {% for ev in linea_tiempo %}
+    <tr><td>{{ ev.hora }}</td><td>{{ ev.origen }}</td><td>{{ ev.evento }}</td><td>{{ ev.valor or "" }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">Línea de tiempo ficticia — en el sistema real proviene de la tabla de eventos del servidor.</p>
+{% endif %}
+{% endblock %}

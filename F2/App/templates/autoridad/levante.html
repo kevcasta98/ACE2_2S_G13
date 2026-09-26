@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Solicitudes de levante{% endblock %}
+{% block encabezado %}Solicitudes de levante{% endblock %}
+{% block contenido %}
+<table class="table table-sm">
+  <thead><tr><th>Manifiesto</th><th>Contenedor</th><th>Naviera</th><th>Peso decl.</th><th>Acciones</th></tr></thead>
+  <tbody>
+  {% for m in manifiestos %}
+    <tr>
+      <td>{{ m.id }}</td><td>{{ m.contenedor }}</td><td>{{ m.naviera }}</td><td>{{ m.peso_declarado }}</td>
+      <td>
+        <form method="post" class="d-flex gap-1 align-items-center">
+          <input type="hidden" name="man_id" value="{{ m.id }}">
+          <select name="canal" class="form-select form-select-sm" style="width:auto">
+            <option value="Verde">Verde</option>
+            <option value="Rojo">Rojo</option>
+          </select>
+          <button class="btn btn-sm btn-outline-success" name="accion" value="otorgar">Otorgar levante</button>
+          <button class="btn btn-sm btn-outline-danger" name="accion" value="retener">Retener</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="text-muted">No hay solicitudes pendientes.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">"Retener" deberá exigir motivo en el backend real (RT05 - retención documental).</p>
+{% endblock %}
