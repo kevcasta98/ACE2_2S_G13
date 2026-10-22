@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Manifiestos{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Nuevo manifiesto</h2>
+    <form method="post">
+        <div class="grid">
+            <div>
+                <label for="contenedor_id">Contenedor</label>
+                <select id="contenedor_id" name="contenedor_id" required>
+                    <option value="">Seleccione...</option>
+                    {% for c in contenedores %}
+                        <option value="{{ c.id }}">{{ c.id }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="operacion">Tipo de operación</label>
+                <select id="operacion" name="operacion" required>
+                    <option value="">Seleccione...</option>
+                    <option value="DEPOSITO">Depósito</option>
+                    <option value="RETIRO">Retiro</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="peso_declarado_g">Peso declarado (g)</label>
+                <input id="peso_declarado_g" name="peso_declarado_g" type="number" min="1" step="1" required>
+            </div>
+
+            <div>
+                <label for="tolerancia_pct">Tolerancia (%)</label>
+                <input id="tolerancia_pct" name="tolerancia_pct" type="number" min="0" step="0.01" placeholder="5">
+            </div>
+
+            <div>
+                <label for="transportista_id">Transportista</label>
+                <select id="transportista_id" name="transportista_id" required>
+                    <option value="">Seleccione...</option>
+                    {% for t in transportistas %}
+                        <option value="{{ t.id }}">{{ t.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top:14px">
+            <label for="observaciones">Observaciones</label>
+            <textarea id="observaciones" name="observaciones"></textarea>
+        </div>
+
+        <div style="margin-top:14px">
+            <button type="submit">Crear manifiesto</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <h2>Manifiestos de la naviera</h2>
+
+    {% if manifiestos %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Contenedor</th>
+                <th>Operación</th>
+                <th>Peso</th>
+                <th>Tolerancia</th>
+                <th>Transportista</th>
+                <th>Documental</th>
+                <th>Operativo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for m in manifiestos %}
+            <tr>
+                <td>{{ m.id }}</td>
+                <td>{{ m.contenedor_id }}</td>
+                <td>{{ m.operacion }}</td>
+                <td>{{ m.peso_declarado_g }} g</td>
+                <td>{{ m.tolerancia_pct }}%</td>
+                <td>{{ m.transportista }}</td>
+                <td>{{ m.estado_documental }}</td>
+                <td>{{ m.estado_operativo }}</td>
+                <td>
+                    <div class="actions">
+                        <a class="button secondary" href="{{ url_for('naviera_manifiesto_detalle', manifiesto_id=m.id) }}">Ver detalle</a>
+                        {% if not m.anulado and m.estado_operativo == 'PENDIENTE' %}
+                        <form method="post" action="{{ url_for('naviera_manifiesto_anular', manifiesto_id=m.id) }}" onsubmit="return confirm('¿Anular {{ m.id }}?');">
+                            <button type="submit">Anular</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay manifiestos declarados todavía.</p>
+    {% endif %}
+</section>
+{% endblock %}

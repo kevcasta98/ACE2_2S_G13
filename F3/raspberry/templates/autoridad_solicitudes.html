@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Solicitudes de levante{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Solicitudes de levante</h2>
+    <p class="muted">Solicitudes pendientes o retenidas temporalmente. Un levante retenido puede ser revisado y posteriormente otorgado.</p>
+</section>
+
+<section class="panel">
+    {% if solicitudes %}
+    <table>
+        <thead>
+            <tr>
+                <th>Declaración</th>
+                <th>Manifiesto</th>
+                <th>Contenedor</th>
+                <th>Naviera</th>
+                <th>Agente</th>
+                <th>Peso</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in solicitudes %}
+            <tr>
+                <td>{{ s.numero }}</td>
+                <td>{{ s.manifiesto_id }}</td>
+                <td>{{ s.contenedor_id }}</td>
+                <td>{{ s.naviera }}</td>
+                <td>{{ s.agente or '—' }}</td>
+                <td>{{ s.peso_declarado_g }} g</td>
+                <td>
+                    <strong>{{ s.levante_estado }}</strong>
+                    {% if s.motivo_retencion %}
+                        <div class="muted">Motivo: {{ s.motivo_retencion }}</div>
+                    {% endif %}
+                    {% if s.observacion %}
+                        <div class="muted" style="margin-top:5px">Obs. agente: {{ s.observacion }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="actions">
+                        <a class="button secondary" href="{{ url_for('autoridad_declaracion_detalle', declaracion_id=s.declaracion_id) }}">Ver declaración</a>
+                    </div>
+                    <form method="post" action="{{ url_for('autoridad_otorgar_levante', declaracion_id=s.declaracion_id) }}" style="margin-top:10px">
+                        <label>Canal</label>
+                        <div class="actions">
+                            <select name="canal" required style="min-width:120px;width:auto">
+                                <option value="">Seleccione...</option>
+                                <option value="VERDE">Verde</option>
+                                <option value="ROJO">Rojo</option>
+                            </select>
+                            <button type="submit">Otorgar levante</button>
+                        </div>
+                    </form>
+                    <form method="post" action="{{ url_for('autoridad_retener_levante', declaracion_id=s.declaracion_id) }}" style="margin-top:10px">
+                        <label>Motivo de retención</label>
+                        <div class="actions">
+                            <input name="motivo" required placeholder="Indique la causa" style="min-width:210px;width:auto;flex:1">
+                            <button type="submit">Retener</button>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay solicitudes de levante pendientes.</p>
+    {% endif %}
+</section>
+{% endblock %}

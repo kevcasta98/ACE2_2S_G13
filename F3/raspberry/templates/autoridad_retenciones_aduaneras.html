@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Retenciones aduaneras{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Retenciones aduaneras</h2>
+    <p class="muted">Muestra únicamente las retenciones de origen aduanero: RT03 canal rojo y RT05 retención documental.</p>
+    <form method="get" class="grid">
+        <div>
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado">
+                <option value="">Todas</option>
+                <option value="ACTIVA" {% if estado_filtro == 'ACTIVA' %}selected{% endif %}>Activas</option>
+                <option value="RESUELTA" {% if estado_filtro == 'RESUELTA' %}selected{% endif %}>Resueltas</option>
+            </select>
+        </div>
+        <div>
+            <label for="causa">Causa</label>
+            <select id="causa" name="causa">
+                <option value="">Todas</option>
+                <option value="RT03" {% if causa_filtro == 'RT03' %}selected{% endif %}>RT03 - Canal rojo</option>
+                <option value="RT05" {% if causa_filtro == 'RT05' %}selected{% endif %}>RT05 - Retención documental</option>
+            </select>
+        </div>
+        <div><button type="submit">Filtrar</button></div>
+    </form>
+</section>
+
+<section class="panel">
+    {% if retenciones %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Turno / vehículo</th>
+                <th>Contenedor</th>
+                <th>Causa</th>
+                <th>Momento</th>
+                <th>Plaza</th>
+                <th>Tiempo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in retenciones %}
+            <tr>
+                <td>R{{ r.id }}</td>
+                <td>
+                    <div>{{ r.turno_id or '—' }}</div>
+                    <div class="muted">{{ r.vehiculo or '—' }}</div>
+                </td>
+                <td>
+                    <div>{{ r.contenedor_id or '—' }}</div>
+                    {% if r.numero_declaracion %}<div class="muted">Decl. {{ r.numero_declaracion }}</div>{% endif %}
+                </td>
+                <td>
+                    <strong>{{ r.causa }}</strong>
+                    <div class="muted">
+                        {% if r.causa == 'RT03' %}Canal rojo de selectivo{% else %}Retención documental{% endif %}
+                    </div>
+                    {% if r.motivo %}<div style="margin-top:5px">{{ r.motivo }}</div>{% endif %}
+                </td>
+                <td>
+                    <div>{{ r.estacion_origen or r.turno_estacion or '—' }}</div>
+                    <div class="muted">{{ r.inicio }}</div>
+                </td>
+                <td>{{ r.plaza or '—' }}</td>
+                <td>{{ duracion_texto(r.inicio, r.fin if r.estado == 'RESUELTA' else None) }}</td>
+                <td>
+                    <strong>{{ r.estado }}</strong>
+                    {% if r.resolucion %}<div class="muted">{{ r.resolucion }}</div>{% endif %}
+                    {% if r.observacion_resolucion %}<div class="muted">{{ r.observacion_resolucion }}</div>{% endif %}
+                    {% if r.motivo_resolucion %}<div class="muted">Motivo: {{ r.motivo_resolucion }}</div>{% endif %}
+                </td>
+                <td>
+                    {% if r.estado == 'ACTIVA' %}
+                        <details>
+                            <summary class="button">Aclarar</summary>
+                            <form method="post" action="{{ url_for('autoridad_retencion_aclarar', retencion_id=r.id) }}" style="margin-top:10px;min-width:280px">
+                                <label>Observación opcional</label>
+                                <textarea name="observacion" placeholder="Observación de la resolución"></textarea>
+                                <button type="submit">Confirmar aclaración</button>
+                            </form>
+                        </details>
+                        <details style="margin-top:8px">
+                            <summary class="button secondary">Rechazar</summary>
+                            <form method="post" action="{{ url_for('autoridad_retencion_rechazar', retencion_id=r.id) }}" style="margin-top:10px;min-width:280px">
+                                <label>Motivo obligatorio</label>
+                                <textarea name="motivo" required placeholder="Motivo del rechazo"></textarea>
+                                <button type="submit">Confirmar rechazo</button>
+                            </form>
+                        </details>
+                    {% else %}
+                        <span class="muted">Sin acciones</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay retenciones aduaneras que coincidan con el filtro.</p>
+    {% endif %}
+</section>
+{% endblock %}

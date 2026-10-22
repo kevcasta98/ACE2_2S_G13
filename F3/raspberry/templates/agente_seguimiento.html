@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Seguimiento{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Seguimiento</h2>
+    <form method="get" class="grid">
+        <div>
+            <label for="q">Número de declaración</label>
+            <input id="q" name="q" value="{{ q }}" placeholder="D-001">
+        </div>
+        <div>
+            <label for="estado">Estado del levante</label>
+            <select id="estado" name="estado">
+                <option value="">Todos</option>
+                {% for valor in ['NO_SOLICITADO','SOLICITADO','OTORGADO','RETENIDO'] %}
+                    <option value="{{ valor }}" {% if estado_filtro == valor %}selected{% endif %}>{{ valor }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div><button type="submit">Filtrar</button></div>
+    </form>
+</section>
+
+<section class="panel">
+    {% if declaraciones %}
+    <table>
+        <thead>
+            <tr>
+                <th>Declaración</th>
+                <th>Manifiesto</th>
+                <th>Contenedor</th>
+                <th>Naviera</th>
+                <th>Estado</th>
+                <th>Levante</th>
+                <th>Canal</th>
+                <th>Motivo</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in declaraciones %}
+            <tr>
+                <td>{{ d.numero }}</td>
+                <td>{{ d.manifiesto_id }}</td>
+                <td>{{ d.contenedor_id }}</td>
+                <td>{{ d.naviera }}</td>
+                <td>{{ d.estado }}</td>
+                <td>{{ d.levante_estado }}</td>
+                <td>{{ d.canal or '—' }}</td>
+                <td>{{ d.motivo_retencion or '—' }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay declaraciones que coincidan con el filtro.</p>
+    {% endif %}
+</section>
+{% endblock %}

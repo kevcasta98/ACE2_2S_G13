@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{% block title %}PORTUS{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #111;
+            background: #f5f5f5;
+        }
+        header {
+            min-height: 64px;
+            background: #111;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+        header h1 { margin: 0; font-size: 22px; }
+        .usuario { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+        .usuario form { margin: 0; }
+        .usuario button {
+            border: 1px solid white;
+            background: transparent;
+            color: white;
+            padding: 7px 10px;
+            cursor: pointer;
+        }
+        .badge {
+            display: inline-block;
+            border: 1px solid currentColor;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 230px minmax(0, 1fr);
+            min-height: calc(100vh - 64px);
+        }
+        nav {
+            background: white;
+            border-right: 1px solid #ccc;
+            padding: 18px;
+        }
+        nav h2 {
+            font-size: 12px;
+            text-transform: uppercase;
+            margin: 0 0 12px;
+        }
+        nav a {
+            display: block;
+            text-decoration: none;
+            color: #111;
+            padding: 10px;
+            margin: 4px 0;
+            border: 1px solid #ddd;
+            background: #fafafa;
+        }
+        nav a:hover { background: #eee; }
+        main { padding: 26px; min-width: 0; }
+        .panel {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+        h2, h3 { margin-top: 0; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0,1fr));
+            gap: 14px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid #777;
+            background: white;
+            font: inherit;
+        }
+        textarea { min-height: 90px; resize: vertical; }
+        button, .button {
+            display: inline-block;
+            padding: 9px 12px;
+            border: 1px solid #111;
+            background: #111;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            font: inherit;
+        }
+        .button.secondary, button.secondary {
+            background: white;
+            color: #111;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 9px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th { background: #eee; }
+        .flash {
+            padding: 11px;
+            margin-bottom: 14px;
+            border: 1px solid #111;
+        }
+        .flash.ok { background: #eee; }
+        .flash.error { background: #fff; border-width: 2px; }
+        .actions {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+        .actions form { margin: 0; }
+        .muted { color: #666; }
+        .nowrap { white-space: nowrap; }
+        @media (max-width: 850px) {
+            .layout { grid-template-columns: 1fr; }
+            nav { border-right: 0; border-bottom: 1px solid #ccc; }
+            .grid { grid-template-columns: 1fr; }
+            main { padding: 16px; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>PORTUS</h1>
+    <div class="usuario">
+        <span>{{ user.nombre }}</span>
+        <span class="badge">{{ user.rol }}</span>
+        <form method="post" action="{{ url_for('logout') }}">
+            <button type="submit">Cerrar sesión</button>
+        </form>
+    </div>
+</header>
+
+<div class="layout">
+    <nav>
+        <h2>Pestañas</h2>
+        {% for nombre, endpoint in tabs %}
+            <a href="{{ url_for(endpoint) }}">{{ nombre }}</a>
+        {% endfor %}
+    </nav>
+
+    <main>
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+            {% for categoria, mensaje in mensajes %}
+                <div class="flash {{ categoria }}">{{ mensaje }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

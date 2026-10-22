@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - {{ manifiesto.id }}{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="actions" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Manifiesto {{ manifiesto.id }}</h2>
+        <a class="button secondary" href="{{ url_for('naviera_manifiestos') }}">Volver</a>
+    </div>
+</section>
+
+<section class="panel">
+    <table>
+        <tr><th>Naviera</th><td>{{ manifiesto.naviera }}</td></tr>
+        <tr><th>Contenedor</th><td>{{ manifiesto.contenedor_id }}</td></tr>
+        <tr><th>Operación</th><td>{{ manifiesto.operacion }}</td></tr>
+        <tr><th>Peso declarado</th><td>{{ manifiesto.peso_declarado_g }} g</td></tr>
+        <tr><th>Tolerancia</th><td>{{ manifiesto.tolerancia_pct }}%</td></tr>
+        <tr><th>Transportista</th><td>{{ manifiesto.transportista }}</td></tr>
+        <tr><th>Estado documental</th><td>{{ manifiesto.estado_documental }}</td></tr>
+        <tr><th>Estado operativo</th><td>{{ manifiesto.estado_operativo }}</td></tr>
+        <tr><th>Observaciones</th><td>{{ manifiesto.observaciones or '—' }}</td></tr>
+        <tr><th>Turno asociado</th><td>{% if turno %}{{ turno.id }} ({{ turno.estado }}){% else %}Ninguno{% endif %}</td></tr>
+    </table>
+</section>
+
+<section class="panel">
+    <h2>Historial</h2>
+    {% if historial %}
+    <table>
+        <thead>
+            <tr><th>Fecha</th><th>Campo</th><th>Anterior</th><th>Nuevo</th><th>Motivo</th><th>Usuario</th></tr>
+        </thead>
+        <tbody>
+        {% for h in historial %}
+            <tr>
+                <td>{{ h.created_at }}</td>
+                <td>{{ h.campo }}</td>
+                <td>{{ h.valor_anterior or '—' }}</td>
+                <td>{{ h.valor_nuevo or '—' }}</td>
+                <td>{{ h.motivo or '—' }}</td>
+                <td>{{ h.username or 'Sistema' }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>Sin historial.</p>
+    {% endif %}
+</section>
+{% endblock %}

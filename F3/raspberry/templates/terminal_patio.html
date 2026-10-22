@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}PORTUS | Patio{% endblock %}{% block content %}
+<section class="panel"><h2>Patio e inventario</h2><p>Solo se considera confirmado un movimiento cuando existe evidencia física registrada. No se permite cambiar manualmente la ubicación desde esta vista.</p></section>
+<section class="panel"><table><thead><tr><th>Contenedor</th><th>Naviera</th><th>Ubicación</th><th>Nivel</th><th>Estado</th><th>Peso declarado</th><th>Autorización</th><th>Confirmación física</th><th>Inicio permanencia</th></tr></thead><tbody>
+{% for c in contenedores %}<tr><td>{{ c.id }}</td><td>{{ c.naviera or '—' }}</td><td>{{ c.ubicacion or 'Sin posición' }}</td><td>{{ c.nivel or '—' }}</td><td>{{ c.estado }}</td><td>{{ c.peso_declarado_g if c.peso_declarado_g is not none else '—' }}</td><td>{{ c.levante or '—' }}</td><td>{{ 'CONFIRMADA' if c.confirmado_fisicamente else 'NO CONFIRMADA' }}</td><td>{{ c.permanencia_inicio or '—' }}</td></tr>{% else %}<tr><td colspan="9">Sin contenedores.</td></tr>{% endfor %}
+</tbody></table></section>{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}PORTUS | Operación{% endblock %}
+{% block content %}
+<section class="panel">
+ <h2>Operación · monitoreo en tiempo real</h2>
+ <p>Actualización mediante MQTT → servidor → eventos del navegador. <span id="actualizacion" class="muted">Conectando…</span></p>
+ <div class="grid">
+  <div class="panel"><h3>Enlace Mega</h3><strong id="enlace">{{ estado.enlace }}</strong><p class="muted" id="latido">{{ estado.heartbeat.timestamp if estado.heartbeat else 'Sin latido registrado' }}</p></div>
+  <div class="panel"><h3>Turnos activos</h3><strong id="turnosN">{{ estado.conteos.turnos }}</strong></div>
+  <div class="panel"><h3>Retenciones abiertas</h3><strong id="retencionesN">{{ estado.conteos.retenciones }}</strong></div>
+  <div class="panel"><h3>Alarmas activas</h3><strong id="alarmasN">{{ estado.conteos.alarmas }}</strong></div>
+ </div>
+ <p class="muted">El firmware actual no transmite estados continuos de cada servo, luz, sensor o grúa. Los elementos sin informe propio no se consideran confirmados.</p>
+ <form method="post" action="{{ url_for('terminal_cerrar_talanquera') }}" onsubmit="return confirm('¿Solicitar CerrarTalanquera al Mega? El controlador puede rechazar el movimiento.');">
+   <button type="submit">Cerrar talanquera (con confirmación)</button>
+ </form>
+ <form method="post" action="{{ url_for('terminal_abrir_puerta_salida') }}" onsubmit="return confirm('¿Solicitar AbrirPuertaSalida? Requiere turno listo y el Mega puede rechazar la orden.');">
+   <button type="submit">Abrir puerta de salida (con confirmación)</button>
+ </form>
+ <p class="muted">Apertura de entrada: únicamente por la validación documental y de cita al leer el RFID. Movimiento físico siempre sujeto al Mega.</p>
+</section>
+<section class="panel"><h3>Parqueo de retención</h3><div id="plazas">
+<table><thead><tr><th>Plaza</th><th>Estado</th><th>Turno</th><th>Vehículo</th></tr></thead><tbody>
+{% for p in estado.plazas %}<tr><td>{{ p.numero }}</td><td>{{ 'OCUPADA' if p.ocupada else 'LIBRE' }}</td><td>{{ p.turno_id or '—' }}</td><td>{{ p.camion or '—' }}</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="panel"><h3>Turnos dentro de la terminal</h3><div id="turnosTabla">
+<table><thead><tr><th>Turno</th><th>Camión</th><th>Contenedor</th><th>Estado</th><th>Estación</th></tr></thead><tbody>
+{% for t in estado.turnos %}<tr><td><a href="{{ url_for('terminal_turno_detalle',turno_id=t.id) }}">{{ t.id }}</a></td><td>{{ t.camion }}</td><td>{{ t.contenedor_id }}</td><td>{{ t.estado }}</td><td>{{ t.estacion or '—' }}</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="panel"><h3>Eventos recientes</h3><pre id="eventos" style="white-space:pre-wrap;max-height:340px;overflow:auto">{% for e in estado.eventos[:10] %}{{ e.timestamp }} · {{ e.tipo }} · {{ e.data }}
+{% endfor %}</pre></section>
+<script>
+const $ = id => document.getElementById(id);
+const esc=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let timer;
+async function actualizar(){
+ try{
+  const resp=await fetch('{{ url_for('api_terminal_estado') }}',{cache:'no-store'});
+  if(!resp.ok) throw Error('HTTP '+resp.status);
+  const d=await resp.json();
+  $('enlace').textContent=d.enlace;
+  $('latido').textContent=d.heartbeat?.timestamp||'Sin latido registrado';
+  $('turnosN').textContent=d.conteos.turnos;
+  $('retencionesN').textContent=d.conteos.retenciones;
+  $('alarmasN').textContent=d.conteos.alarmas;
+  $('plazas').innerHTML='<table><thead><tr><th>Plaza</th><th>Estado</th><th>Turno</th><th>Vehículo</th></tr></thead><tbody>'+d.plazas.map(p=>`<tr><td>${esc(p.numero)}</td><td>${p.ocupada?'OCUPADA':'LIBRE'}</td><td>${esc(p.turno_id)}</td><td>${esc(p.camion)}</td></tr>`).join('')+'</tbody></table>';
+  $('turnosTabla').innerHTML='<table><thead><tr><th>Turno</th><th>Vehículo</th><th>Contenedor</th><th>Estado</th><th>Estación</th></tr></thead><tbody>'+d.turnos.map(t=>`<tr><td><a href="/terminal/turnos/${encodeURIComponent(t.id)}">${esc(t.id)}</a></td><td>${esc(t.camion)}</td><td>${esc(t.contenedor_id)}</td><td>${esc(t.estado)}</td><td>${esc(t.estacion)}</td></tr>`).join('')+'</tbody></table>';
+  $('eventos').textContent=d.eventos.map(e=>`${e.timestamp} · ${e.tipo} · ${JSON.stringify(e.data)}`).join('\n');
+  $('actualizacion').textContent='Datos consultados: '+new Date().toLocaleTimeString();
+ }catch(e){$('actualizacion').textContent='Sin actualización: '+e.message;}
+}
+const sse=new EventSource('{{ url_for('api_terminal_eventos_stream') }}');
+sse.onmessage=()=>{clearTimeout(timer);timer=setTimeout(actualizar,150);};
+sse.onerror=()=>{$('actualizacion').textContent='MQTT/SSE reconectando; consulta de respaldo cada 5 s';};
+setInterval(actualizar,5000);
+</script>
+{% endblock %}

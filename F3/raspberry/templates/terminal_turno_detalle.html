@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block title %}PORTUS | Detalle turno{% endblock %}{% block content %}
+<section class="panel"><h2>Turno {{ detalle.turno.id }}</h2>
+<p><strong>Camión:</strong> {{ detalle.turno.camion }} · <strong>Contenedor:</strong> {{ detalle.turno.contenedor_id }} · <strong>Manifiesto:</strong> {{ detalle.turno.manifiesto_id }} · <strong>Operación:</strong> {{ detalle.turno.operacion }}</p>
+<p><strong>Estado:</strong> {{ detalle.turno.estado }} · <strong>Estación:</strong> {{ detalle.turno.estacion or '—' }} · <strong>Canal:</strong> {{ detalle.turno.canal or '—' }}</p>
+<p><strong>Inicio:</strong> {{ detalle.turno.inicio }} · <strong>Cierre:</strong> {{ detalle.turno.cierre or 'No cerrado' }}</p>
+<a href="{{ url_for('terminal_turnos') }}">Volver a turnos</a></section>
+<section class="panel"><h3>Línea de tiempo de eventos confirmados</h3><p class="muted">Solo eventos recibidos y persistidos con identificador de turno. Los cambios antiguos de estado sin evento no se reconstruyen artificialmente.</p>
+<table><thead><tr><th>Fecha y hora</th><th>Origen</th><th>Tipo</th><th>Datos</th></tr></thead><tbody>
+{% for e in detalle.eventos %}<tr><td>{{ e.timestamp }}</td><td>{{ e.origen }}</td><td>{{ e.tipo }}</td><td><code>{{ e.datos }}</code></td></tr>{% else %}<tr><td colspan="4">No hay eventos asociados explícitamente al identificador de este turno.</td></tr>{% endfor %}
+</tbody></table></section>
+<section class="panel"><h3>Pesajes</h3><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Medido (g)</th><th>Esperado (g)</th><th>Diferencia (g)</th><th>Muestras</th><th>Resultado</th></tr></thead><tbody>{% for p in detalle.pesajes %}<tr><td>{{ p.timestamp }}</td><td>{{ p.tipo }}</td><td>{{ p.peso_medido_g }}</td><td>{{ p.peso_esperado_g }}</td><td>{{ p.diferencia_g }}</td><td>{{ p.muestras }}</td><td>{{ p.resultado }}</td></tr>{% else %}<tr><td colspan="7">Sin pesajes.</td></tr>{% endfor %}</tbody></table></section>
+<section class="panel"><h3>Retenciones</h3><table><thead><tr><th>ID</th><th>Causa</th><th>Plaza</th><th>Estado</th><th>Resolución</th></tr></thead><tbody>{% for r in detalle.retenciones %}<tr><td>R{{ r.id }}</td><td>{{ r.causa }}</td><td>{{ r.plaza or '—' }}</td><td>{{ r.estado }}</td><td>{{ r.resolucion or '—' }}</td></tr>{% else %}<tr><td colspan="5">Sin retenciones.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

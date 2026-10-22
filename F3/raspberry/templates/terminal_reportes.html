@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}PORTUS | Reportes{% endblock %}{% block content %}
+<section class="panel"><h2>Reportes de operación</h2><form method="get" class="grid"><div><label>Desde</label><input type="date" name="desde" required value="{{ reporte.desde }}"></div><div><label>Hasta</label><input type="date" name="hasta" required value="{{ reporte.hasta }}"></div><div><button>Calcular</button></div></form>
+<a class="button secondary" href="{{ url_for('terminal_reportes_csv',desde=reporte.desde,hasta=reporte.hasta) }}">Exportar CSV</a><p class="muted">N/D significa no disponible; no se crean valores de sensores que no se han registrado.</p></section>
+<section class="panel"><h3>Indicadores</h3><table><thead><tr><th>Métrica</th><th>Valor</th></tr></thead><tbody>
+{% for nombre,valor in reporte.indicadores.items() %}<tr><td>{{ nombre.replace('_',' ').capitalize() }}</td><td>{{ valor if valor is not none else 'N/D — sin evidencia' }}</td></tr>{% endfor %}
+</tbody></table></section>
+<section class="panel"><h3>Retenciones por causa y resolución</h3><table><thead><tr><th>Causa</th><th>Resolución</th><th>Cantidad</th></tr></thead><tbody>
+{% for r in reporte.retenciones %}<tr><td>{{ r.causa }}</td><td>{{ r.resolucion }}</td><td>{{ r.cantidad }}</td></tr>{% else %}<tr><td colspan="3">Sin retenciones en el periodo.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

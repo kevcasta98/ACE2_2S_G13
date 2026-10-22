@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block title %}PORTUS | Turnos{% endblock %}{% block content %}
+<section class="panel"><h2>Turnos</h2><form method="get" class="grid">
+<div><label>Buscar turno, contenedor o camión</label><input name="q" value="{{ q }}"></div>
+<div><label>Estado</label><select name="estado"><option value="">Todos</option>{% for e in ['Programado','EnGarita','EnPesajeEntrada','EnRuta','EnTransferencia','EnPesajeSalida','EnSalida','Retenido','Cerrado','Anulado'] %}<option value="{{ e }}" {% if e==estado_filtro %}selected{% endif %}>{{ e }}</option>{% endfor %}</select></div><div><button>Filtrar</button></div></form></section>
+<section class="panel"><table><thead><tr><th>Turno</th><th>Camión</th><th>Contenedor</th><th>Manifiesto</th><th>Operación</th><th>Estado</th><th>Estación</th><th>Inicio</th><th></th></tr></thead><tbody>
+{% for t in turnos %}<tr><td>{{ t.id }}</td><td>{{ t.camion }}</td><td>{{ t.contenedor_id }}</td><td>{{ t.manifiesto_id }}</td><td>{{ t.operacion }}</td><td>{{ t.estado }}</td><td>{{ t.estacion or '—' }}</td><td>{{ t.inicio }}</td><td><a href="{{ url_for('terminal_turno_detalle',turno_id=t.id) }}">Línea de tiempo</a></td></tr>{% else %}<tr><td colspan="9">Sin turnos para este filtro.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

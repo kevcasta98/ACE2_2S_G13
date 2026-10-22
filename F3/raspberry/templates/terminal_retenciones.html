@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Retenciones{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Retenciones</h2>
+    <p class="muted">Bandeja de retenciones de la terminal. Muestra retenciones abiertas y resueltas, la plaza lógica ocupada y la evidencia asociada.</p>
+
+    <form method="get" class="grid">
+        <div>
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado">
+                <option value="">Todas</option>
+                <option value="ACTIVA" {% if estado_filtro == 'ACTIVA' %}selected{% endif %}>Activas</option>
+                <option value="RESUELTA" {% if estado_filtro == 'RESUELTA' %}selected{% endif %}>Resueltas</option>
+            </select>
+        </div>
+        <div>
+            <label for="causa">Causa</label>
+            <select id="causa" name="causa">
+                <option value="">Todas</option>
+                <option value="RT01" {% if causa_filtro == 'RT01' %}selected{% endif %}>RT01 - Discrepancia de peso al ingreso</option>
+                <option value="RT02" {% if causa_filtro == 'RT02' %}selected{% endif %}>RT02 - Discrepancia de peso a la salida</option>
+                <option value="RT03" {% if causa_filtro == 'RT03' %}selected{% endif %}>RT03 - Canal rojo</option>
+                <option value="RT04" {% if causa_filtro == 'RT04' %}selected{% endif %}>RT04 - Fuera de ventana</option>
+                <option value="RT05" {% if causa_filtro == 'RT05' %}selected{% endif %}>RT05 - Retención documental</option>
+                <option value="RT06" {% if causa_filtro == 'RT06' %}selected{% endif %}>RT06 - Retención manual</option>
+            </select>
+        </div>
+        <div><button type="submit">Filtrar</button></div>
+    </form>
+</section>
+
+<section class="panel">
+    <h3>Plazas de parqueo</h3>
+    <table>
+        <thead>
+            <tr><th>Plaza</th><th>Estado</th><th>Turno</th><th>Vehículo</th><th>Contenedor</th><th>Ocupada desde</th></tr>
+        </thead>
+        <tbody>
+        {% for p in plazas %}
+            <tr>
+                <td>{{ p.numero }}</td>
+                <td><strong>{{ 'OCUPADA' if p.ocupada else 'LIBRE' }}</strong></td>
+                <td>{{ p.turno_id or '—' }}</td>
+                <td>{{ p.vehiculo or '—' }}</td>
+                <td>{{ p.contenedor_id or '—' }}</td>
+                <td>{{ p.ocupada_desde or '—' }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <h3>Bandeja de retenciones</h3>
+    {% if retenciones %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Turno / vehículo</th>
+                <th>Contenedor</th>
+                <th>Causa</th>
+                <th>Momento</th>
+                <th>Plaza</th>
+                <th>Tiempo</th>
+                <th>Evidencia</th>
+                <th>Rol facultado</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in retenciones %}
+            <tr>
+                <td>R{{ r.id }}</td>
+                <td>
+                    <strong>{{ r.turno_id or '—' }}</strong>
+                    <div class="muted">{{ r.vehiculo or '—' }}</div>
+                    {% if r.transportista %}<div class="muted">{{ r.transportista }}</div>{% endif %}
+                </td>
+                <td>
+                    <strong>{{ r.contenedor_id or '—' }}</strong>
+                    {% if r.manifiesto_id %}<div class="muted">{{ r.manifiesto_id }} · {{ r.operacion }}</div>{% endif %}
+                    {% if r.naviera %}<div class="muted">{{ r.naviera }}</div>{% endif %}
+                </td>
+                <td>
+                    <strong>{{ r.causa }}</strong>
+                    <div class="muted">
+                        {% if r.causa == 'RT01' %}Discrepancia de peso al ingreso
+                        {% elif r.causa == 'RT02' %}Discrepancia de peso a la salida
+                        {% elif r.causa == 'RT03' %}Canal rojo de selectivo
+                        {% elif r.causa == 'RT04' %}Llegada fuera de ventana
+                        {% elif r.causa == 'RT05' %}Retención documental
+                        {% elif r.causa == 'RT06' %}Retención manual operativa
+                        {% endif %}
+                    </div>
+                    {% if r.motivo %}<div style="margin-top:5px">{{ r.motivo }}</div>{% endif %}
+                </td>
+                <td>
+                    <div>{{ r.estacion_origen or r.turno_estacion or '—' }}</div>
+                    <div class="muted">{{ r.inicio }}</div>
+                </td>
+                <td>{{ r.plaza or '—' }}</td>
+                <td>{{ duracion_texto(r.inicio, r.fin if r.estado == 'RESUELTA' else None) }}</td>
+                <td>
+                    {% if r.causa in ('RT01','RT02') %}
+                        <div>Contenedor declarado: <strong>{{ '%.1f'|format(r.peso_contenedor_declarado_g or 0) }} g</strong></div>
+                        {% if r.tara_g is not none %}<div class="muted">Tara vehículo: {{ '%.1f'|format(r.tara_g) }} g</div>{% endif %}
+                        {% if r.peso_total_esperado_g is not none %}<div>Total esperado: {{ '%.1f'|format(r.peso_total_esperado_g) }} g</div>{% endif %}
+                        {% if r.peso_total_medido_g is not none %}<div>Total medido: {{ '%.1f'|format(r.peso_total_medido_g) }} g</div>{% endif %}
+                        {% if r.peso_total_esperado_g is not none and r.peso_total_medido_g is not none %}
+                            <div>Diferencia: <strong>{{ '%.1f'|format((r.peso_total_medido_g - r.peso_total_esperado_g)|abs) }} g</strong></div>
+                            {% set dp = diferencia_porcentual(r.peso_total_esperado_g, r.peso_total_medido_g) %}
+                            {% if dp is not none %}<div>Diferencia: {{ '%.2f'|format(dp) }} %</div>{% endif %}
+                        {% endif %}
+                    {% else %}
+                        <span class="muted">No aplica evidencia de peso</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ r.rol_resolutor or '—' }}</strong>
+                    {% if r.estado == 'ACTIVA' and r.rol_resolutor == 'TERMINAL' %}
+                        <div class="muted">Pendiente de resolución por TERMINAL</div>
+                    {% elif r.estado == 'ACTIVA' %}
+                        <div class="muted">Debe resolver {{ r.rol_resolutor }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ r.estado }}</strong>
+                    {% if r.resolucion %}<div class="muted">{{ r.resolucion }}</div>{% endif %}
+                    {% if r.observacion_resolucion %}<div class="muted">{{ r.observacion_resolucion }}</div>{% endif %}
+                    {% if r.motivo_resolucion %}<div class="muted">Motivo: {{ r.motivo_resolucion }}</div>{% endif %}
+                </td>
+                <td style="min-width:220px">
+                    {% if r.estado == 'ACTIVA' and r.rol_resolutor == 'TERMINAL' %}
+                        <details>
+                            <summary class="button">Aclarar</summary>
+                            <form method="post" action="{{ url_for('terminal_retencion_aclarar', retencion_id=r.id) }}" style="margin-top:8px;min-width:260px">
+                                <label>Observación opcional</label>
+                                <textarea name="observacion" placeholder="Observación de la resolución"></textarea>
+                                <button type="submit">Confirmar Aclarar</button>
+                            </form>
+                        </details>
+
+                        {% if r.causa in ('RT01','RT02') %}
+                        <details style="margin-top:8px">
+                            <summary class="button">Corregir</summary>
+                            <form method="post" action="{{ url_for('terminal_retencion_corregir', retencion_id=r.id) }}" style="margin-top:8px;min-width:260px">
+                                <label>Observación opcional</label>
+                                <textarea name="observacion" placeholder="Observación de la corrección"></textarea>
+                                <p class="muted">PORTUS calculará el nuevo peso declarado a partir del peso medido y la tara cuando corresponda.</p>
+                                <button type="submit">Confirmar Corregir</button>
+                            </form>
+                        </details>
+                        {% endif %}
+
+                        <details style="margin-top:8px">
+                            <summary class="button secondary">Rechazar</summary>
+                            <form method="post" action="{{ url_for('terminal_retencion_rechazar', retencion_id=r.id) }}" style="margin-top:8px;min-width:260px">
+                                <label>Motivo obligatorio</label>
+                                <textarea name="motivo" required placeholder="Motivo del rechazo"></textarea>
+                                <button type="submit">Confirmar Rechazar</button>
+                            </form>
+                        </details>
+                    {% elif r.estado == 'ACTIVA' %}
+                        <span class="muted">Debe resolver {{ r.rol_resolutor }}</span>
+                    {% else %}
+                        <span class="muted">Sin acciones</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay retenciones que coincidan con el filtro.</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <h3>Resolución física</h3>
+    <p>Las resoluciones envían <strong>AgujaLiberar</strong> al Arduino y esperan su ACK antes de cambiar SQLite. Si el controlador rechaza el movimiento, la retención permanece activa y se registra la alarma AL14.</p>
+</section>
+{% endblock %}

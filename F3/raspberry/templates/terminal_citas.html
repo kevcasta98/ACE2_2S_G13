@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Citas{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h2>Citas</h2>
+    <p class="muted">
+        Agenda de atención en franjas de 15 minutos. Cada franja admite como máximo 2 citas.
+        Las franjas pasadas se conservan para consulta, pero ya no pueden bloquearse ni utilizarse para reprogramar.
+    </p>
+    <p><strong>Hora local del servidor:</strong> {{ ahora_local }}</p>
+
+    <form method="get" action="{{ url_for('terminal_citas') }}" class="grid">
+        <div>
+            <label for="fecha">Fecha</label>
+            <input id="fecha" type="date" name="fecha" value="{{ fecha }}" required>
+        </div>
+        <div style="align-self:end">
+            <button type="submit">Cambiar fecha</button>
+        </div>
+    </form>
+
+    <p style="margin-top:18px">
+        <strong>Cumplimiento de ventana:</strong>
+        {% if porcentaje_cumplimiento is none %}
+            Sin citas cumplidas registradas para este día.
+        {% else %}
+            {{ porcentaje_cumplimiento }}%
+        {% endif %}
+    </p>
+</div>
+
+<div class="panel">
+    <h3>Vinculación de transportistas</h3>
+    <p class="muted">
+        Genera un código de 6 caracteres. El transportista lo usa con <strong>/vincular CODIGO</strong>
+        desde Telegram. Cada código se usa una sola vez y expira en 60 minutos.
+    </p>
+
+    <form method="post" action="{{ url_for('terminal_codigo_vinculacion') }}" class="grid">
+        <input type="hidden" name="fecha" value="{{ fecha }}">
+        <div>
+            <label for="transportista_id">Transportista</label>
+            <select id="transportista_id" name="transportista_id" required>
+                <option value="">Seleccione...</option>
+                {% for t in transportistas %}
+                    <option value="{{ t.id }}">
+                        {{ t.nombre }}{% if t.telegram_cuenta %} - vinculado{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="align-self:end">
+            <button type="submit">Generar código</button>
+        </div>
+    </form>
+
+    <h3 style="margin-top:24px">Estado de vinculación</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Transportista</th>
+                <th>Telegram</th>
+                <th>Vinculado desde</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transportistas %}
+            <tr>
+                <td>{{ t.nombre }}</td>
+                <td>{{ "VINCULADO" if t.telegram_cuenta else "NO VINCULADO" }}</td>
+                <td>{{ t.vinculada_at or "-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if codigos %}
+    <h3 style="margin-top:24px">Últimos códigos generados</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Transportista</th>
+                <th>Expira</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in codigos %}
+            <tr>
+                <td><strong>{{ c.codigo }}</strong></td>
+                <td>{{ c.transportista }}</td>
+                <td>{{ c.expira_at }}</td>
+                <td>{{ "USADO" if c.usado else "DISPONIBLE" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h3>Agenda del {{ fecha }}</h3>
+    <p class="muted">
+        Bloquear una franja impide nuevas citas, pero no cancela automáticamente las ya asignadas.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Franja</th>
+                <th>Capacidad</th>
+                <th>Estado</th>
+                <th>Citas</th>
+                <th>Control</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for slot in agenda %}
+            <tr>
+                <td class="nowrap"><strong>{{ slot.hora_inicio }} - {{ slot.hora_fin }}</strong></td>
+                <td>{{ slot.ocupadas }} / {{ slot.capacidad }}</td>
+                <td>
+                    {% if slot.pasada %}
+                        <span class="muted"><strong>PASADA</strong></span>
+                    {% elif slot.bloqueada %}
+                        <strong>BLOQUEADA</strong>
+                        {% if slot.motivo_bloqueo %}<br><span class="muted">{{ slot.motivo_bloqueo }}</span>{% endif %}
+                    {% elif slot.ocupadas >= slot.capacidad %}
+                        LLENA
+                    {% else %}
+                        DISPONIBLE
+                    {% endif %}
+                </td>
+                <td>
+                    {% if slot.citas %}
+                        {% for cita in slot.citas %}
+                            <div style="border:1px solid #ddd;padding:10px;margin-bottom:8px">
+                                <div><strong>Cita #{{ cita.id }}</strong> - {{ cita.estado }}</div>
+                                <div>Contenedor: <strong>{{ cita.contenedor_id }}</strong></div>
+                                <div>Transportista: {{ cita.transportista }}</div>
+                                <div>Vehículo: {{ cita.vehiculo or "Pendiente de asignar" }}</div>
+                                <div>Canal: {{ cita.canal or "-" }}</div>
+                                {% if cita.estado == "PROGRAMADA" %}
+                                <div class="actions" style="margin-top:8px">
+                                    <form method="post" action="{{ url_for('terminal_cita_cancelar', cita_id=cita.id) }}"
+                                          onsubmit="return confirm('¿Cancelar esta cita?');">
+                                        <input type="hidden" name="fecha" value="{{ fecha }}">
+                                        <button type="submit" class="secondary">Cancelar</button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('terminal_cita_reprogramar', cita_id=cita.id) }}">
+                                        <input type="hidden" name="fecha" value="{{ fecha }}">
+                                        <select name="nuevo_inicio" required style="width:auto;display:inline-block">
+                                            <option value="">Nueva franja...</option>
+                                            {% for opcion in opciones_reprogramacion %}
+                                                {% if opcion.inicio != cita.inicio %}
+                                                <option value="{{ opcion.inicio }}">
+                                                    {{ opcion.etiqueta }} ({{ opcion.disponibles }} cupo(s))
+                                                </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit">Reprogramar</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <span class="muted">Sin citas</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if slot.pasada %}
+                        <span class="muted">Sin acciones</span>
+                    {% elif not slot.bloqueada %}
+                    <form method="post" action="{{ url_for('terminal_cita_bloquear') }}"
+                          onsubmit="return confirm('¿Bloquear esta franja para nuevas citas?');">
+                        <input type="hidden" name="fecha" value="{{ fecha }}">
+                        <input type="hidden" name="inicio" value="{{ slot.inicio_input }}">
+                        <input type="text" name="motivo" placeholder="Motivo opcional" style="margin-bottom:6px">
+                        <button type="submit" class="secondary">Bloquear franja</button>
+                    </form>
+                    {% else %}
+                        <span class="muted">Bloqueada</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

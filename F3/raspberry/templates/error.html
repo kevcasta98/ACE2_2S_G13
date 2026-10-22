@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Error{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>{{ titulo }}</h2>
+    <p>{{ mensaje }}</p>
+    <a class="button secondary" href="{{ url_for('dashboard') }}">Volver</a>
+</section>
+{% endblock %}

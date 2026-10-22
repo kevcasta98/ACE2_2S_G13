@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Declaraciones{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Declaraciones</h2>
+    <p class="muted">Manifiestos declarados por las navieras que todavía requieren completar la cadena documental.</p>
+</section>
+
+<section class="panel">
+    {% if manifiestos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Manifiesto</th>
+                <th>Contenedor</th>
+                <th>Naviera</th>
+                <th>Operación</th>
+                <th>Peso</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for m in manifiestos %}
+            <tr>
+                <td>{{ m.manifiesto_id }}</td>
+                <td>{{ m.contenedor_id }}</td>
+                <td>{{ m.naviera }}</td>
+                <td>{{ m.operacion }}</td>
+                <td>{{ m.peso_declarado_g }} g</td>
+                <td>
+                    <div>{{ m.estado_documental }}</div>
+                    {% if m.declaracion_id %}
+                        <div class="muted">{{ m.numero_declaracion }} · {{ m.levante_estado }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not m.declaracion_id %}
+                    <details>
+                        <summary class="button">Presentar declaración</summary>
+                        <form method="post" action="{{ url_for('agente_presentar_declaracion', manifiesto_id=m.manifiesto_id) }}" style="margin-top:12px;min-width:330px">
+                            <div style="margin-bottom:10px">
+                                <label>Número de declaración</label>
+                                <input name="numero" required placeholder="D-001">
+                            </div>
+                            <div style="margin-bottom:10px">
+                                <label>Régimen</label>
+                                <select name="regimen" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="IMPORTACION_DEFINITIVA">Importación definitiva</option>
+                                    <option value="DEPOSITO_TEMPORAL">Depósito temporal</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom:10px">
+                                <label>Descripción de la mercancía</label>
+                                <textarea name="descripcion" minlength="10" required></textarea>
+                            </div>
+                            <div style="margin-bottom:10px">
+                                <label>Valor declarado</label>
+                                <input name="valor_declarado" type="number" min="0.01" step="0.01" required>
+                            </div>
+                            <button type="submit">Guardar declaración</button>
+                        </form>
+                    </details>
+                    {% elif m.agente_usuario_id == user.id %}
+                        {% if m.levante_estado == 'NO_SOLICITADO' %}
+                        <form method="post" action="{{ url_for('agente_solicitar_levante', declaracion_id=m.declaracion_id) }}">
+                            <button type="submit">Solicitar levante</button>
+                        </form>
+                        {% elif m.levante_estado == 'SOLICITADO' %}
+                            <span class="badge">Levante solicitado</span>
+                        {% elif m.levante_estado == 'RETENIDO' %}
+                            <span class="badge">Levante retenido</span>
+                        {% endif %}
+
+                        <details style="margin-top:10px">
+                            <summary class="button secondary">Adjuntar observación</summary>
+                            <form method="post" action="{{ url_for('agente_adjuntar_observacion', declaracion_id=m.declaracion_id) }}" style="margin-top:10px;min-width:300px">
+                                <label>Nota documental</label>
+                                <textarea name="observacion" required placeholder="Observación visible para la autoridad"></textarea>
+                                <button type="submit">Guardar observación</button>
+                            </form>
+                        </details>
+                        {% if m.notas_count %}
+                            <div class="muted" style="margin-top:7px">{{ m.notas_count }} observación(es) adjunta(s)</div>
+                        {% endif %}
+                    {% else %}
+                        <span class="muted">Declaración gestionada por otro agente</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay manifiestos pendientes de gestión documental.</p>
+    {% endif %}
+</section>
+{% endblock %}

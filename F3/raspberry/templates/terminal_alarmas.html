@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}PORTUS | Alarmas{% endblock %}{% block content %}
+<section class="panel"><h2>Alarmas</h2><p>Reconocer una alarma registra que se atendió la notificación; no elimina ni silencia físicamente su causa.</p>
+<form method="get"><label>Estado</label><select name="estado"><option value="">Todas</option>{% for x in ['ACTIVA','RECONOCIDA','CERRADA'] %}<option value="{{ x }}" {% if filtro==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select><button>Filtrar</button></form></section>
+<section class="panel"><table><thead><tr><th>ID</th><th>Código</th><th>Severidad</th><th>Fecha</th><th>Estado</th><th>Datos</th><th>Reconocida por</th><th>Acción</th></tr></thead><tbody>
+{% for a in alarmas %}<tr><td>{{ a.id }}</td><td>{{ a.codigo }}</td><td>{{ a.severidad or '—' }}</td><td>{{ a.timestamp }}</td><td>{{ a.estado }}</td><td><code>{{ a.datos }}</code></td><td>{{ a.reconocida_por or '—' }}</td><td>{% if a.estado=='ACTIVA' %}<form method="post" action="{{ url_for('terminal_alarma_reconocer',alarma_id=a.id) }}"><button>Reconocer</button></form>{% else %}—{% endif %}</td></tr>{% else %}<tr><td colspan="8">No existen alarmas para este filtro.</td></tr>{% endfor %}
+</tbody></table></section>{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Mis contenedores{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Mis contenedores</h2>
+
+    <form method="get" class="grid">
+        <div>
+            <label for="q">Buscar por identificador</label>
+            <input id="q" name="q" value="{{ q }}" placeholder="Ej. C3">
+        </div>
+        <div>
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado">
+                <option value="">Todos</option>
+                {% for e in estados %}
+                    <option value="{{ e.estado }}" {% if estado_filtro == e.estado %}selected{% endif %}>{{ e.estado }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <button type="submit">Aplicar filtros</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    {% if contenedores %}
+    <table>
+        <thead>
+            <tr>
+                <th>Contenedor</th>
+                <th>Manifiesto</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th>Autorización</th>
+                <th>Canal</th>
+                <th>Permanencia</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in contenedores %}
+            <tr>
+                <td>{{ c.id }}</td>
+                <td>{{ c.manifiesto_id }}</td>
+                <td>{{ c.ubicacion or 'Sin ubicación' }}</td>
+                <td>{{ c.estado }}</td>
+                <td>{{ c.levante_estado or 'SIN LEVANTE' }}</td>
+                <td>{{ c.canal or '—' }}</td>
+                <td>{{ permanencia_texto(c.permanencia_inicio) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No hay contenedores asociados a manifiestos que coincidan con los filtros.</p>
+    {% endif %}
+</section>
+{% endblock %}

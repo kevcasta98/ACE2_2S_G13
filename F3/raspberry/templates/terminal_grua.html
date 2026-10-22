@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block title %}PORTUS | Grúa{% endblock %}{% block content %}
+<section class="panel"><h2>Grúa · telemetría</h2><p>Esta versión no origina trabajos ni mueve la grúa. El firmware recibido carece de la integración de comandos y eventos de la grúa definidos en Fase 2; estos controles quedarán deshabilitados hasta instalar el firmware del integrante responsable.</p>
+<div class="actions"><button disabled title="No implementado en el Mega actual">Referenciar</button><button disabled>Suspender</button><button disabled>Reanudar</button></div>
+<p class="muted">Estado de grúa: {{ 'Hay eventos recibidos; revisar la tabla' if eventos else 'SIN TELEMETRÍA DEL CONTROLADOR' }}</p></section>
+<section class="panel"><h3>Eventos reales de grúa</h3><table><thead><tr><th>Fecha</th><th>Origen</th><th>Datos</th></tr></thead><tbody>
+{% for e in eventos %}<tr><td>{{ e.timestamp }}</td><td>{{ e.origen }}</td><td><code>{{ e.datos }}</code></td></tr>{% else %}<tr><td colspan="3">No se han recibido eventos portus/evt/grua.</td></tr>{% endfor %}
+</tbody></table></section>{% endblock %}

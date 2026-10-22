@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Declaración {{ declaracion.numero }}
+
+<section class="panel">
+    <h3>Observaciones documentales</h3>
+    {% if notas %}
+        {% for nota in notas %}
+            <div style="border-top:1px solid #ddd;padding:10px 0">
+                <strong>{{ nota.autor }}</strong> <span class="muted">({{ nota.rol }}) · {{ nota.created_at }}</span>
+                <div style="margin-top:5px">{{ nota.texto }}</div>
+            </div>
+        {% endfor %}
+    {% elif declaracion.observacion %}
+        <p>{{ declaracion.observacion }}</p>
+    {% else %}
+        <p class="muted">No se han adjuntado observaciones.</p>
+    {% endif %}
+</section>
+{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="actions" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Declaración {{ declaracion.numero }}</h2>
+        <a class="button secondary" href="{{ url_for('autoridad_solicitudes') }}">Volver</a>
+    </div>
+</section>
+
+<section class="panel">
+    <table>
+        <tr><th>Manifiesto</th><td>{{ declaracion.manifiesto_id }}</td></tr>
+        <tr><th>Contenedor</th><td>{{ declaracion.contenedor_id }}</td></tr>
+        <tr><th>Naviera</th><td>{{ declaracion.naviera }}</td></tr>
+        <tr><th>Transportista</th><td>{{ declaracion.transportista }}</td></tr>
+        <tr><th>Agente</th><td>{{ declaracion.agente or '—' }}</td></tr>
+        <tr><th>Operación</th><td>{{ declaracion.operacion }}</td></tr>
+        <tr><th>Peso declarado</th><td>{{ declaracion.peso_declarado_g }} g</td></tr>
+        <tr><th>Tolerancia</th><td>{{ declaracion.tolerancia_pct }}%</td></tr>
+        <tr><th>Régimen</th><td>{{ declaracion.regimen }}</td></tr>
+        <tr><th>Descripción</th><td>{{ declaracion.descripcion }}</td></tr>
+        <tr><th>Valor declarado</th><td>{{ declaracion.valor_declarado }}</td></tr>
+        <tr><th>Estado declaración</th><td>{{ declaracion.estado }}</td></tr>
+        <tr><th>Levante</th><td>{{ declaracion.levante_estado }}</td></tr>
+        <tr><th>Canal</th><td>{{ declaracion.canal or '—' }}</td></tr>
+        <tr><th>Motivo de retención</th><td>{{ declaracion.motivo_retencion or '—' }}</td></tr>
+    </table>
+</section>
+
+
+<section class="panel">
+    <h3>Observaciones documentales</h3>
+    {% if notas %}
+        {% for nota in notas %}
+            <div style="border-top:1px solid #ddd;padding:10px 0">
+                <strong>{{ nota.autor }}</strong> <span class="muted">({{ nota.rol }}) · {{ nota.created_at }}</span>
+                <div style="margin-top:5px">{{ nota.texto }}</div>
+            </div>
+        {% endfor %}
+    {% elif declaracion.observacion %}
+        <p>{{ declaracion.observacion }}</p>
+    {% else %}
+        <p class="muted">No se han adjuntado observaciones.</p>
+    {% endif %}
+</section>
+{% endblock %}

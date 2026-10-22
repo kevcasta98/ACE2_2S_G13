@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}PORTUS - Consulta de carga{% endblock %}
+{% block content %}
+<section class="panel">
+    <h2>Consulta de carga</h2>
+    <p class="muted">Consulta cualquier contenedor de la terminal, sin restricción de naviera.</p>
+    <form method="get" class="grid">
+        <div>
+            <label for="q">Identificador del contenedor</label>
+            <input id="q" name="q" value="{{ q }}" placeholder="C1">
+        </div>
+        <div>
+            <label for="naviera_id">Naviera</label>
+            <select id="naviera_id" name="naviera_id">
+                <option value="">Todas</option>
+                {% for n in navieras %}
+                    <option value="{{ n.id }}" {% if naviera_filtro == (n.id|string) %}selected{% endif %}>{{ n.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="autorizacion">Estado de autorización</label>
+            <select id="autorizacion" name="autorizacion">
+                <option value="">Todos</option>
+                {% for valor, etiqueta in [
+                    ('LEVANTE_VERDE','Levante otorgado - Verde'),
+                    ('LEVANTE_ROJO','Levante otorgado - Rojo'),
+                    ('RETENIDO','Levante retenido'),
+                    ('SOLICITADO','Levante solicitado'),
+                    ('DECLARACION_PRESENTADA','Declaración presentada'),
+                    ('SIN_DECLARACION','Sin declaración'),
+                    ('SIN_MANIFIESTO','Sin manifiesto')
+                ] %}
+                    <option value="{{ valor }}" {% if autorizacion_filtro == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div><button type="submit">Buscar</button></div>
+    </form>
+</section>
+
+<section class="panel">
+    {% if contenedores %}
+    <table>
+        <thead>
+            <tr>
+                <th>Contenedor</th>
+                <th>Naviera</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th>Autorización</th>
+                <th>Reloj de permanencia</th>
+                <th>Documento actual</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in contenedores %}
+            <tr>
+                <td><strong>{{ c.id }}</strong></td>
+                <td>{{ c.naviera or '—' }}</td>
+                <td>
+                    {{ c.ubicacion or '—' }}
+                    {% if c.nivel is not none %}<div class="muted">Nivel {{ c.nivel }}</div>{% endif %}
+                </td>
+                <td>{{ c.estado }}</td>
+                <td>
+                    <strong>{{ c.autorizacion }}</strong>
+                    {% if c.levante_estado %}<div class="muted">{{ c.levante_estado }}{% if c.canal %} · {{ c.canal }}{% endif %}</div>{% endif %}
+                    {% if c.motivo_retencion %}<div class="muted">{{ c.motivo_retencion }}</div>{% endif %}
+                </td>
+                <td>{{ permanencia_texto(c.permanencia_inicio) }}</td>
+                <td>
+                    {% if c.manifiesto_id %}
+                        <div>{{ c.manifiesto_id }}</div>
+                        <div class="muted">{{ c.operacion }} · {{ c.estado_documental }}</div>
+                        {% if c.numero_declaracion %}<div class="muted">Decl. {{ c.numero_declaracion }}</div>{% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No se encontraron contenedores con los filtros seleccionados.</p>
+    {% endif %}
+</section>
+{% endblock %}
