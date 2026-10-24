@@ -1,6 +1,6 @@
 # PORTUS — Fase 3, extensión del sistema principal (v1.0)
 
-**Base:** PORTUS v0.9 (22 octubre 2026). **NO** se incluye firmware ESP32 meteorológico; **NO** se reemplaza firmware del segundo Arduino de grúa; **NO** se incluye `portus.db`, claves ni fotografías personales.
+**Base:** PORTUS v0.9 (22 octubre 2026). Incluye firmware ESP32 meteorológico. **NO** se reemplaza firmware del segundo Arduino de grúa; **NO** se incluye `portus.db`, claves ni fotografías personales.
 
 ## 1. Alcance real, sin simular dispositivos
 
@@ -117,7 +117,11 @@ Cuenta `terminal` → **Accesos** → Catálogo. Cada `CAM-01…CAM-06` conserva
 
 Cuenta `autoridad` → **Placas restringidas** para alta y baja, siempre con motivo de 10 caracteres, auditado. RT08 tiene prioridad si la placa leída está restringida, incluso si coincide con el RFID válido.
 
-## 5. MQTT esperado de la estación (sin firmware ESP32 en este ZIP)
+## 5. Firmware y MQTT de la estación
+
+El firmware está en `arduino/PORTUS_Fase3_Estacion_Climatologica.ino`. Usa DHT22, LDR y salida digital DO del comparador YL-83. Valores iniciales de cableado: DHT22 DATA en GPIO4, LDR en GPIO34 (ADC1) y lluvia DO en GPIO27. Deben coincidir con el montaje real. `LDR_DARK_ADC` y `LDR_BRIGHT_ADC` requieren calibración; `RAIN_LEVEL_WET` se invierte si el módulo entrega HIGH cuando está mojado. El código asume que la entrada analógica LDR produce un valor mayor en oscuridad. Instalar PubSubClient, ArduinoJson 7 y DHT sensor library de Adafruit en Arduino IDE.
+
+Antes de compilar, configurar SSID/clave WiFi y la dirección del broker MQTT de la Raspberry en el encabezado del firmware. Puerto predeterminado: 1883. La estación usa NTP para la hora, intenta reconectar WiFi/MQTT y sigue leyendo sensores durante una caída de red. No es necesario cablearla al controlador Arduino.
 
 Publica en `portus/estacion/lectura` el mismo sobre de F2:
 
@@ -125,7 +129,7 @@ Publica en `portus/estacion/lectura` el mismo sobre de F2:
 {"id":"lectura-real-001","timestamp":"2026-10-23T18:00:00-06:00","origin":"estacion","type":"LECTURA","data":{"temperatura":27.3,"humedad":70,"lluvia":false,"luz":62}}
 ```
 
-Cada `SegundosLatidoEstacion` segundos `portus/estacion/estado` con un sobre similar y `type: ESTADO`. Estación y Raspberry usan mismos parámetros configurables de F3. La web publica cambios de intervalo en `portus/estacion/config` (la implementación de recepción y persistencia NVS corresponde al firmware del ESP32, **fuera de este paquete**). **Estos JSON son ejemplos de protocolo para desarrollar; no se publicarán como pruebas de la evaluación**, que exige sensores reales.
+Cada `SegundosLatidoEstacion` segundos publica `portus/estacion/estado` con `type: ESTADO`. La web publica cambios de intervalo en `portus/estacion/config`; el firmware los guarda en NVS y los conserva después de reiniciarse. El receptor valida las mediciones y guarda cada una en `fase3_clima_historial`; la tabla `fase3_estacion_climatologica` conserva la lectura más reciente por identificador de estación. El panel TERMINAL → Operación muestra los valores actuales y últimas lecturas, consultando la API cada dos segundos. **Estos JSON son ejemplos de protocolo; no se publicarán como pruebas de la evaluación**, que exige sensores reales.
 
 Se usan `portus/vision/placa`, `portus/vision/cola`, `portus/vision/estado`, `portus/evt/iluminacion` y `portus/evt/clima`, además de los tópicos anteriores.
 

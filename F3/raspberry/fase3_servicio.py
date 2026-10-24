@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Fase3 Raspberry: estación MQTT, clima, iluminación y conteo real COCO.
-No produce lecturas meteorológicas falsas. La estación ESP32 será otro proyecto.
+"""Fase3 Raspberry: recepción MQTT de clima, iluminación y conteo real COCO.
+Las lecturas ambientales solo se guardan cuando llegan válidas desde la estación.
 """
 import json,os,time,threading
 from datetime import datetime,timedelta
@@ -38,6 +38,16 @@ def iluminacion(client,encender,motivo):
  finally:conn.close()
  publicar(client,'IluminacionEncender' if encender else 'IluminacionApagar',{'motivo':motivo})
 
+def lluvia_bool(valor):
+ if isinstance(valor,str):
+  normal=valor.strip().lower()
+  if normal in ('1','true','si','sí','lloviendo','rain','wet'):return True
+  if normal in ('0','false','no','seco','sin lluvia','dry'):return False
+  raise ValueError('Valor de lluvia no reconocido')
+ if isinstance(valor,(int,float)) and valor in (0,1):return bool(valor)
+ if isinstance(valor,bool):return valor
+ raise ValueError('Valor de lluvia no reconocido')
+
 def procesar_estacion(client,payload,topico):
  global ultimo_latido, inicio_sin_lluvia, lluvia_previa
  data=payload.get('data',{})
@@ -58,14 +68,24 @@ def procesar_estacion(client,payload,topico):
   if t is None or h is None or luz is None or lluvia is None:return
   t=float(t);h=float(h);luz=float(luz)
   if not (-30<=t<=80 and 0<=h<=100 and 0<=luz<=100):return
-  if isinstance(lluvia,str):lluvia=lluvia.lower() in ('1','true','si','lloviendo','rain')
-  else:lluvia=bool(lluvia)
+  try:lluvia=lluvia_bool(lluvia)
+  except ValueError:return
   ultimo_latido=ahora
+  estacion_id=str(data.get('estacion_id') or payload.get('origin') or 'estacion-esp32')[:80]
+  timestamp_sensor=str(payload.get('timestamp') or momento())[:64]
+  recibido=momento()
   fijar_estado(conn,'estacion_estado','OPERATIVA');fijar_estado(conn,'estacion_latido',momento())
   fijar_estado(conn,'temperatura',t);fijar_estado(conn,'humedad',h)
   fijar_estado(conn,'luz',luz);fijar_estado(conn,'lluvia','1' if lluvia else '0')
+  conn.execute('''INSERT INTO fase3_estacion_climatologica
+    (estacion_id,timestamp_sensor,recibido,temperatura_c,humedad_pct,lluvia,luz_pct,topico)
+    VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(estacion_id) DO UPDATE SET
+    timestamp_sensor=excluded.timestamp_sensor,recibido=excluded.recibido,
+    temperatura_c=excluded.temperatura_c,humedad_pct=excluded.humedad_pct,
+    lluvia=excluded.lluvia,luz_pct=excluded.luz_pct,topico=excluded.topico''',
+    (estacion_id,timestamp_sensor,recibido,t,h,int(lluvia),luz,topico))
   conn.execute('INSERT INTO fase3_clima_historial(instante,temperatura,humedad,lluvia,luz) VALUES (?,?,?,?,?)',
-               (momento(),t,h,int(lluvia),luz))
+               (recibido,t,h,int(lluvia),luz))
   cerrar_alarma(conn,'AL16')
   modo=estado(conn,'iluminacion_modo','AUTOMATICO')
   encendida=estado(conn,'iluminacion_encendida','1')=='1'

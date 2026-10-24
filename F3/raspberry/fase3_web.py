@@ -18,6 +18,13 @@ def resumen():
  try:
   r={x['clave']:{'valor':x['valor'],'actualizado':x['actualizado']} for x in c.execute('SELECT * FROM fase3_estado')}
   r['parametros']={x['clave']:x['valor'] for x in c.execute('SELECT * FROM fase3_parametros')}
+  actual=c.execute('''SELECT estacion_id,timestamp_sensor,recibido,temperatura_c,
+      humedad_pct,lluvia,luz_pct,topico FROM fase3_estacion_climatologica
+      ORDER BY recibido DESC LIMIT 1''').fetchone()
+  r['estacion_actual']=dict(actual) if actual else None
+  r['estacion_historial']=[dict(x) for x in c.execute('''SELECT estacion_id,
+      timestamp_sensor,recibido,temperatura_c,humedad_pct,lluvia,luz_pct
+      FROM fase3_estacion_climatologica ORDER BY recibido DESC LIMIT 8''')]
   return r
  finally:c.close()
 

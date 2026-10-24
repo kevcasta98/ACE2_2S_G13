@@ -94,6 +94,14 @@ def migrar():
   c.execute('''CREATE TABLE IF NOT EXISTS fase3_clima_historial (
     id INTEGER PRIMARY KEY AUTOINCREMENT, instante TEXT NOT NULL,
     temperatura REAL, humedad REAL, lluvia INTEGER, luz REAL)''')
+  # Snapshot consultable por el dashboard: una fila por estación física.
+  # El historial anterior se conserva para análisis y auditoría ambiental.
+  c.execute('''CREATE TABLE IF NOT EXISTS fase3_estacion_climatologica (
+    estacion_id TEXT PRIMARY KEY, timestamp_sensor TEXT NOT NULL,
+    recibido TEXT NOT NULL, temperatura_c REAL NOT NULL,
+    humedad_pct REAL NOT NULL, lluvia INTEGER NOT NULL CHECK (lluvia IN (0,1)),
+    luz_pct REAL NOT NULL CHECK (luz_pct BETWEEN 0 AND 100),
+    topico TEXT NOT NULL DEFAULT 'portus/estacion/lectura')''')
   for k,(v,lo,hi) in DEFAULTS.items():
    c.execute('INSERT OR IGNORE INTO fase3_parametros(clave,valor,actualizado) VALUES (?,?,?)',(k,v,momento()))
   for k,v in [('iluminacion_modo','AUTOMATICO'),('iluminacion_encendida','1'),
