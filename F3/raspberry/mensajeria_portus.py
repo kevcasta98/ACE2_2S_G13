@@ -71,6 +71,7 @@ def ayuda() -> str:
         "/miscitas - Lista tus citas.\n"
         "/estado CONTENEDOR - Consulta tu carga.\n"
         "/misturnos - Lista tus operaciones en curso.\n"
+        "/clima - Condición meteorológica y de grúa.\n"
         "/ayuda - Muestra esta ayuda."
     )
 
@@ -271,6 +272,45 @@ def comando_misturnos(transportista: dict) -> str:
     return "\n".join(lineas)
 
 
+def comando_clima() -> str:
+    from fase3_db import estado, parametro
+    c=conectar()
+    try:
+        est=estado(c,'estacion_estado','DESCONOCIDO')
+        grua=estado(c,'grua_clima','NO_CONFIRMADA')
+        instante=estado(c,'estacion_latido','NUNCA')
+        if est!='OPERATIVA':
+            return f"Información meteorológica no disponible. Grúa: {grua}. Último reporte: {instante}."
+        t=estado(c,'temperatura','NO DISPONIBLE')
+        h=estado(c,'humedad','NO DISPONIBLE')
+        lluvia=estado(c,'lluvia','NO DISPONIBLE')
+        susp=estado(c,'suspension_desde','SIN CONFIRMAR')
+        return (f"Clima PORTUS: {t} °C, humedad {h}%, "
+                f"lluvia {'Sí' if lluvia=='1' else 'No' if lluvia=='0' else 'Desconocida'}. "
+                f"Grúa: {grua}. Suspensión desde: {susp}. Última lectura: {instante}.")
+    finally:c.close()
+
+
+def enviar_foto(chat_id, archivo: str, texto: str):
+    """Fotografía real por multipart/form-data. No enviar si no existe en disco."""
+    import mimetypes,uuid
+    ruta=Path(__file__).resolve().parent/'evidencias'/'garita'/Path(archivo).name
+    if Path(archivo).name!=archivo or not ruta.is_file() or ruta.suffix.lower()!='.jpg':
+        raise RuntimeError('Foto no disponible en almacenamiento local')
+    boundary='----PORTUS'+uuid.uuid4().hex
+    contenido=b''
+    for nombre,valor in [('chat_id',str(chat_id)),('caption',texto[:990])]:
+        contenido+=(f'--{boundary}\r\nContent-Disposition: form-data; name="{nombre}"\r\n\r\n{valor}\r\n').encode('utf-8')
+    contenido+=(f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; filename="{ruta.name}"\r\nContent-Type: image/jpeg\r\n\r\n').encode('utf-8')
+    contenido+=ruta.read_bytes()+b'\r\n'+f'--{boundary}--\r\n'.encode('ascii')
+    req=urllib.request.Request(f'{API_BASE}/sendPhoto', data=contenido,
+                               headers={'Content-Type':'multipart/form-data; boundary='+boundary})
+    with urllib.request.urlopen(req,timeout=35) as resp:
+        resultado=json.loads(resp.read().decode('utf-8'))
+    if not resultado.get('ok'):raise RuntimeError('Telegram rechazó fotografía')
+    return resultado
+
+
 def procesar_texto(chat_id, texto: str) -> str:
     texto = (texto or "").strip()
     partes = texto.split()
@@ -293,6 +333,8 @@ def procesar_texto(chat_id, texto: str) -> str:
         return comando_estado(transportista, partes)
     if comando == "/misturnos":
         return comando_misturnos(transportista)
+    if comando == "/clima":
+        return comando_clima()
     return "Comando no reconocido. Usa /ayuda para ver los comandos disponibles."
 
 
@@ -301,8 +343,9 @@ def enviar_notificaciones_pendientes():
     try:
         filas = conn.execute(
             """
-            SELECT n.id, n.transportista_id, n.mensaje, mv.cuenta_id
+            SELECT n.id, n.transportista_id, n.mensaje, mv.cuenta_id, fn.archivo AS foto
             FROM notificaciones_transportista n
+            LEFT JOIN fase3_fotos_notificacion fn ON fn.notificacion_id=n.id
             LEFT JOIN mensajeria_vinculos mv
                    ON mv.transportista_id = n.transportista_id
                   AND mv.canal = 'TELEGRAM'
@@ -315,7 +358,10 @@ def enviar_notificaciones_pendientes():
             if not n["cuenta_id"]:
                 continue
             try:
-                enviar(n["cuenta_id"], n["mensaje"])
+                if n['foto']:
+                    enviar_foto(n['cuenta_id'],n['foto'],n['mensaje'])
+                else:
+                    enviar(n["cuenta_id"], n["mensaje"])
                 conn.execute(
                     """
                     UPDATE notificaciones_transportista
@@ -341,6 +387,8 @@ def enviar_notificaciones_pendientes():
 
 def main():
     inicializar_bd()
+    from fase3_db import migrar
+    migrar()
     if not TOKEN:
         raise SystemExit(
             "Falta PORTUS_TELEGRAM_TOKEN. Ejemplo:\n"

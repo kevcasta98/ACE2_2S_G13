@@ -1,0 +1,17 @@
+PORTUS - MANIFIESTO CONSOLIDADO ACTUALIZADO 2026-10-22
+=================================================
+Fase 2 v0.9, código incremental para Raspberry + Mega:
+- Nuevo firmware: arduino/PORTUS_Fase2_v07_Supervision_Operacion.ino
+- Firmware anterior de recuperación: arduino/PORTUS_Fase2_v06_Retenciones.ino
+- Web Flask: app_portus.py + web_supervision_portus.py + templates/
+- Datos/supervisión: db_portus.py, supervision_portus.py
+- Comunicación: bridge_portus.py, protocolo_portus.py, persistencia_portus.py
+- Procesos físicos: garita_portus.py, pesaje_portus.py, operacion_portus.py
+- Citas/mensajería: citas_portus.py, mensajeria_portus.py, simular_transportista.py
+- Instalación segura: INSTALAR_ACTUALIZACION.sh, raspberry/iniciar_portus.sh,
+  raspberry/detener_portus.sh, raspberry/estado_portus.sh
+- Diagnóstico offline: raspberry/pruebas_supervision_offline.py
+
+La base de datos portus.db no está incluida. Se conserva en ~/portus.
+La etapa grúa, comandos remotos completos, RT04/05/06 y otras funciones
+NO están finalizadas: revisar README_V09.md antes de instalación/pruebas.

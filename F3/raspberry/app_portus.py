@@ -412,7 +412,7 @@ def terminal_retenciones():
     estado = request.args.get("estado", "").strip().upper()
     causa = request.args.get("causa", "").strip().upper()
 
-    causas_validas = ("RT01", "RT02", "RT03", "RT04", "RT05", "RT06")
+    causas_validas = ("RT01", "RT02", "RT03", "RT04", "RT05", "RT06", "RT07", "RT08")
 
     sql = """
         SELECT
@@ -2039,14 +2039,14 @@ def autoridad_retenciones_aduaneras():
         LEFT JOIN camiones c ON c.id = t.camion_id
         LEFT JOIN manifiestos m ON m.id = t.manifiesto_id
         LEFT JOIN declaraciones d ON d.manifiesto_id = m.id
-        WHERE r.causa IN ('RT03','RT05')
+        WHERE r.causa IN ('RT03','RT05','RT08')
     """
     params = []
 
     if estado in ("ACTIVA", "RESUELTA"):
         sql += " AND r.estado = ?"
         params.append(estado)
-    if causa in ("RT03", "RT05"):
+    if causa in ("RT03", "RT05", "RT08"):
         sql += " AND r.causa = ?"
         params.append(causa)
 
@@ -2074,7 +2074,7 @@ def _cargar_retencion_aduanera(conn, retencion_id):
                t.contenedor_id
         FROM retenciones r
         LEFT JOIN turnos t ON t.id = r.turno_id
-        WHERE r.id = ? AND r.causa IN ('RT03','RT05')
+        WHERE r.id = ? AND r.causa IN ('RT03','RT05','RT08')
         """,
         (retencion_id,),
     ).fetchone()
@@ -2358,6 +2358,14 @@ def not_found(error):
     return "Página no encontrada", 404
 
 
+from fase3_db import migrar as migrar_fase3
+from fase3_web import instalar as instalar_fase3_web
+inicializar_bd()
+migrar_fase3()
+TABS_POR_ROL['TERMINAL'].extend([('Accesos','terminal_accesos'),('Parámetros F3','terminal_parametros_fase3')])
+TABS_POR_ROL['AUTORIDAD'].append(('Placas restringidas','autoridad_placas_restringidas'))
+instalar_fase3_web(app, roles_required, usuario_actual, menu_para)
+
 from web_supervision_portus import instalar as instalar_supervision
 instalar_supervision(app, roles_required, usuario_actual, menu_para, enviar_comando_controlador)
 
@@ -2368,7 +2376,7 @@ def main():
     if app.secret_key == "PORTUS-DEMO-CAMBIAR-ESTA-CLAVE":
         print("[ADVERTENCIA] PORTUS_SECRET_KEY no está definida.")
 
-    print("PORTUS Web v0.9 - Supervisión + Turnos + Reportes + Retenciones")
+    print("PORTUS Fase 3 v1.0 - Accesos, OCR, clima, iluminación, operación")
     print("Escuchando en http://0.0.0.0:5000")
     app.run(host="0.0.0.0", port=5000, debug=False)
 

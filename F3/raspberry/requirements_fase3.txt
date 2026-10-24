@@ -1,0 +1,7 @@
+# Fase 3: bibliotecas adicionales para Raspberry (instalar según su arquitectura).
+# Tesseract OCR es un binario del SO: sudo apt install tesseract-ocr
+opencv-python-headless>=4.8,<5
+pytesseract>=0.3.10,<1
+# Modelo COCO más ligero: copiar pesos yolov8n.pt descargados legalmente a modelos/
+# En Raspberry Pi 3B+ la instalación de Torch/Ultralytics puede no ser viable.
+ultralytics>=8,<9

@@ -14,11 +14,14 @@ from __future__ import annotations
 import json
 import re
 import uuid
+import threading
 from datetime import timedelta
 
 import paho.mqtt.client as mqtt
 
 from db_portus import conectar, inicializar_bd
+from fase3_db import migrar, momento
+from fase3_acceso import prevalidar, respuesta_manual, recibir_respuesta
 from citas_portus import ahora_local, desde_db, encolar_notificacion
 
 MQTT_HOST = "localhost"
@@ -191,7 +194,9 @@ def manifiestos_pendientes_transportista(conn, transportista_id: int):
     ).fetchall()
 
 
-def validar_rfid(client: mqtt.Client, data: dict) -> None:
+def validar_rfid(client: mqtt.Client, data: dict, skip_fase3: bool = False) -> None:
+    if not skip_fase3:
+        raise RuntimeError('Fase3: prohibido autorizar RFID sin prevalidación OCR/manual')
     uid = normalizar_uid(data.get("uid"))
     camion_evento = str(data.get("camion") or "").strip().upper()
 
@@ -344,6 +349,21 @@ def validar_rfid(client: mqtt.Client, data: dict) -> None:
 
         tolerancia_g = float(cita["peso_declarado_g"]) * float(cita["tolerancia_pct"]) / 100.0
 
+        # RT07/RT08 tienen prioridad sobre canal VERDE para el desvío físico.
+        # El canal aduanero original permanece intacto en SQLite.
+        ultimo_f3 = None
+        consulta=conectar()
+        try:
+            ultimo_f3=consulta.execute("""SELECT resultado,causa_retencion FROM fase3_accesos
+              WHERE id=? AND camion_id=? AND turno_id IS NULL LIMIT 1""",
+              (data.get('_fase3_acceso_id'),camion['id'])).fetchone()
+            plazas_f3=plazas_libres(consulta)
+        finally:consulta.close()
+        canal_fisico = ('ROJO' if ultimo_f3 is not None and
+                 ultimo_f3['causa_retencion'] in ('RT07','RT08') else cita['canal'])
+        if canal_fisico == 'ROJO' and plazas_f3 == 0:
+            enviar_rechazo(client,'PARQUEO_LLENO',camion['placa'],camion['transportista_id'])
+            return
         params = {
             "camion": camion["placa"],
             "manifiesto": cita["manifiesto_id"],
@@ -351,7 +371,7 @@ def validar_rfid(client: mqtt.Client, data: dict) -> None:
             "operacion": cita["operacion"],
             "peso": float(cita["peso_declarado_g"]),
             "tolerancia": round(tolerancia_g, 3),
-            "canal": cita["canal"],
+            "canal": canal_fisico,
             "turno": turno_id,
             "cita": cita["cita_id"],
         }
@@ -477,6 +497,18 @@ def registrar_ingreso_completo(data: dict) -> None:
             (cita["id"],),
         )
 
+        acceso_f3=conn.execute("""SELECT * FROM fase3_accesos WHERE camion_id=? AND turno_id IS NULL
+               AND resultado IN ('VERIFICADA','NO_COINCIDE','RESTRINGIDA','APROBADA_MANUAL')
+               ORDER BY id DESC LIMIT 1""",(camion['id'],)).fetchone()
+        if acceso_f3:
+            conn.execute('UPDATE fase3_accesos SET turno_id=? WHERE id=?',(turno_id,acceso_f3['id']))
+            if acceso_f3['foto'] and camion['transportista_id']:
+                from citas_portus import encolar_notificacion
+                encolar_notificacion(conn,camion['transportista_id'],'INGRESO_FOTOGRAFIA',
+                  f"Ingreso verificado: {camion_placa}, contenedor {contenedor_id}, {operacion}. Placa: {acceso_f3['placa_leida'] or acceso_f3['placa_esperada']}, hora {momento()}. Fotografía disponible.")
+                notificacion_id=conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+                conn.execute('INSERT OR IGNORE INTO fase3_fotos_notificacion(notificacion_id,archivo) VALUES (?,?)',
+                             (notificacion_id,acceso_f3['foto']))
         conn.commit()
         print(
             f"[GARITA] INGRESO COMPLETO -> {turno_id} | {camion_placa} | "
@@ -498,7 +530,8 @@ def procesar_evento_garita(client: mqtt.Client, payload: dict) -> None:
     resultado = str(data.get("resultado") or "").upper()
 
     if accion == "RFID":
-        validar_rfid(client, data)
+        threading.Thread(target=prevalidar,args=(client,data,str(payload.get('id') or ''),validar_rfid),
+                         daemon=True,name='f3-rfid').start()
         return
 
     if accion == "INGRESO" and resultado == "COMPLETO":
@@ -540,6 +573,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
         return
     client.subscribe(TOPIC_GARITA)
     client.subscribe(TOPIC_CMD_RESPUESTA)
+    client.subscribe('portus/acceso/decision')
     print("[MQTT] Servicio GARITA conectado")
     print(f"[MQTT] Suscrito a {TOPIC_GARITA}")
     print(f"[MQTT] Suscrito a {TOPIC_CMD_RESPUESTA}")
@@ -555,12 +589,16 @@ def on_message(client, userdata, msg):
     if msg.topic == TOPIC_GARITA:
         procesar_evento_garita(client, payload)
     elif msg.topic == TOPIC_CMD_RESPUESTA:
+        recibir_respuesta(payload)
         procesar_respuesta_comando(payload)
+    elif msg.topic == 'portus/acceso/decision':
+        respuesta_manual(client,payload,validar_rfid)
 
 
 def main():
     inicializar_bd()
-    print("=== PORTUS - Servicio GARITA v0.6 ===")
+    migrar()
+    print("=== PORTUS - Servicio GARITA + VISIÓN v1.0 ===")
     print("Validacion de acceso: Raspberry/SQLite")
     print("Enclavamientos fisicos: Arduino Mega")
     print("Ctrl+C para salir.\n")

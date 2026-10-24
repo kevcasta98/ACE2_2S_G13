@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}PORTUS - Parámetros Fase 3{% endblock %}
+{% block content %}<section class="panel"><h2>Parámetros configurables · Fase 3</h2>
+<p>Sin valores fijos en la lógica. Se validan rangos e histéresis. Los parámetros del ESP32 se enviarán cuando la estación se conecte.</p>
+<form method="post" action="{{url_for('terminal_parametros_guardar')}}"><div class="grid">{% for k,lim in limites.items() %}
+<div><label>{{k}} ({{lim[1]}}–{{lim[2]}})</label><input name="{{k}}" type="number" min="{{lim[1]}}" max="{{lim[2]}}" required value="{{valores.get(k,lim[0])}}"></div>{% endfor %}</div>
+<p><button>Guardar y auditar parámetros</button></p></form></section>{% endblock %}

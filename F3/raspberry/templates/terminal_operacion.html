@@ -54,4 +54,30 @@ sse.onmessage=()=>{clearTimeout(timer);timer=setTimeout(actualizar,150);};
 sse.onerror=()=>{$('actualizacion').textContent='MQTT/SSE reconectando; consulta de respaldo cada 5 s';};
 setInterval(actualizar,5000);
 </script>
+{% if fase3 is defined %}
+<section class="panel"><h2>Fase 3 — Estado meteorológico y visión</h2>
+<p>La información proviene de sensores reales. «No disponible» significa que no hay una lectura válida, no que el valor sea cero.</p><p class="muted">Última actualización: <span id="fase3_actualizado">—</span></p>
+<div class="grid">
+<div><strong>Estación</strong><p>{{fase3.get('estacion_estado',{}).get('valor','DESCONOCIDO')}}</p><p>Temperatura: {{fase3.get('temperatura',{}).get('valor','NO DISPONIBLE')}} °C · Humedad: {{fase3.get('humedad',{}).get('valor','NO DISPONIBLE')}} %</p><p>Lluvia: {{fase3.get('lluvia',{}).get('valor','NO DISPONIBLE')}} · Luz: {{fase3.get('luz',{}).get('valor','NO DISPONIBLE')}} /100</p><p>Último latido: {{fase3.get('estacion_latido',{}).get('valor','NUNCA')}}</p></div>
+<div><strong>Cámara y cola</strong><p>Cámara: {{fase3.get('camara_estado',{}).get('valor','DESCONOCIDO')}}</p><p>Vehículos en espera: {{fase3.get('cola_estado',{}).get('valor','NO DISPONIBLE')}}</p><p>Grúa y lluvia: {{fase3.get('grua_clima',{}).get('valor','NO CONFIRMADA')}}</p></div>
+</div>
+<p id="fase3_live" class="muted"></p><h3>Iluminación</h3><p>Estado confirmado: {{'ENCENDIDA' if fase3.get('iluminacion_encendida',{}).get('valor','1')=='1' else 'APAGADA'}} · Modo {{fase3.get('iluminacion_modo',{}).get('valor','AUTOMATICO')}}</p>
+<form method="post" action="{{url_for('terminal_modo_iluminacion')}}"><select name="modo"><option value="AUTOMATICO">Automático</option><option value="ENCENDIDO">Encendido forzado</option><option value="APAGADO">Apagado forzado</option></select><p><button>Guardar modo</button> <a class="button secondary" href="{{url_for('terminal_parametros_fase3')}}">Parámetros F3</a> <a class="button secondary" href="{{url_for('terminal_accesos')}}">Accesos</a></p></form>
+</section>
+<script>
+async function refrescarF3(){
+  try{
+    const r=await fetch('{{url_for('api_terminal_fase3')}}',{cache:'no-store'});
+    if(!r.ok)throw Error('HTTP '+r.status);
+    const d=await r.json();
+    const val=k=>d[k]?.valor??'NO DISPONIBLE';
+    document.getElementById('fase3_actualizado').textContent=new Date().toLocaleTimeString();
+    document.getElementById('fase3_live').textContent='Estación '+val('estacion_estado')+' · T: '+val('temperatura')+' °C · H: '+val('humedad')+'% · Lluvia: '+val('lluvia')+' · Luz: '+val('luz')+'/100 · Cámara: '+val('camara_estado')+' · Fila: '+val('cola_estado')+' · Grúa: '+val('grua_clima');
+  }catch(e){document.getElementById('fase3_actualizado').textContent='Sin datos: '+e.message;}
+}
+setInterval(refrescarF3,5000);refrescarF3();
+</script>
+{% endif %}
+
+
 {% endblock %}

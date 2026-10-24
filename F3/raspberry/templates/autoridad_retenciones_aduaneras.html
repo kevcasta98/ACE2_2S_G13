@@ -3,7 +3,7 @@
 {% block content %}
 <section class="panel">
     <h2>Retenciones aduaneras</h2>
-    <p class="muted">Muestra únicamente las retenciones de origen aduanero: RT03 canal rojo y RT05 retención documental.</p>
+    <p class="muted">Retenciones de AUTORIDAD: RT03 canal rojo, RT05 documental y RT08 placa restringida.</p>
     <form method="get" class="grid">
         <div>
             <label for="estado">Estado</label>
@@ -19,6 +19,7 @@
                 <option value="">Todas</option>
                 <option value="RT03" {% if causa_filtro == 'RT03' %}selected{% endif %}>RT03 - Canal rojo</option>
                 <option value="RT05" {% if causa_filtro == 'RT05' %}selected{% endif %}>RT05 - Retención documental</option>
+                <option value="RT08" {% if causa_filtro == 'RT08' %}selected{% endif %}>RT08 - Placa restringida</option>
             </select>
         </div>
         <div><button type="submit">Filtrar</button></div>
@@ -56,7 +57,7 @@
                 <td>
                     <strong>{{ r.causa }}</strong>
                     <div class="muted">
-                        {% if r.causa == 'RT03' %}Canal rojo de selectivo{% else %}Retención documental{% endif %}
+                        {% if r.causa == 'RT03' %}Canal rojo de selectivo{% elif r.causa == 'RT08' %}Placa restringida{% else %}Retención documental{% endif %}
                     </div>
                     {% if r.motivo %}<div style="margin-top:5px">{{ r.motivo }}</div>{% endif %}
                 </td>

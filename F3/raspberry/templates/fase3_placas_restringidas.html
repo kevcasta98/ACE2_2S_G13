@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}PORTUS - Placas restringidas{% endblock %}
+{% block content %}<section class="panel"><h2>Placas restringidas · AUTORIDAD</h2>
+<form method="post" action="{{url_for('autoridad_restringir_placa')}}"><div class="grid"><div><label>Placa C123ABC</label><input name="placa" required pattern="C[0-9]{3}[A-Za-z]{3}"></div><div><label>Motivo de la restricción (mínimo 10 caracteres)</label><input name="motivo" minlength="10" required></div></div><p><button>Restringir placa</button></p></form>
+</section><section class="panel"><h3>Restricciones vigentes e historial</h3><table><thead><tr><th>Placa</th><th>Motivo</th><th>Alta</th><th>Baja</th><th>Acción</th></tr></thead><tbody>
+{% for r in filas %}<tr><td>{{r.placa}}</td><td>{{r.motivo}}</td><td>{{r.alta}} (usuario {{r.usuario_alta}})</td><td>{{r.baja or 'VIGENTE'}} {% if r.motivo_baja %}{{r.motivo_baja}}{% endif %}</td>
+<td>{% if not r.baja %}<form method="post" action="{{url_for('autoridad_quitar_restriccion',restriccion_id=r.id)}}"><input name="motivo" required minlength="10" placeholder="Motivo de retiro"><button>Quitar restricción</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table></section>{% endblock %}

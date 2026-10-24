@@ -118,6 +118,11 @@ def notificar_retencion(
             f"retenido por canal rojo de selectivo. "
             f"Plaza: {plaza if plaza is not None else 'pendiente'}."
         )
+    elif causa in ('RT07','RT08'):
+        descripcion = ('placa no coincide con el RFID' if causa=='RT07'
+                       else 'placa restringida por AUTORIDAD')
+        mensaje = (f"Vehículo {turno['placa']}, contenedor {turno['contenedor_id']}: "
+                   f"retención {causa} por {descripcion}. Plaza {plaza}.")
     elif causa == "RT02":
         mensaje = (
             f"Vehiculo {turno['placa']}, contenedor {turno['contenedor_id']}: "
@@ -176,7 +181,7 @@ def crear_retencion(
     else:
         alarma_parqueo_lleno(conn, turno["id"])
 
-    rol = "AUTORIDAD" if causa in ("RT03", "RT05") else "TERMINAL"
+    rol = "AUTORIDAD" if causa in ("RT03", "RT05", "RT08") else "TERMINAL"
 
     conn.execute(
         """
@@ -271,6 +276,18 @@ def procesar_pesaje(data: dict, evento_id: str | None = None) -> None:
         canal_db = str(turno["canal"] or canal or "").upper()
 
         if tipo == "ENTRADA":
+            # Las retenciones de identificación tienen prioridad. La aguja ya
+            # recibió ruta ROJA desde GARITA para desviar físicamente.
+            control_placa = conn.execute("""SELECT causa_retencion, placa_leida
+                 FROM fase3_accesos WHERE turno_id=? AND causa_retencion IN ('RT07','RT08')
+                 ORDER BY id DESC LIMIT 1""",(turno_id,)).fetchone()
+            if control_placa:
+                causa=control_placa['causa_retencion']
+                plaza,nueva=crear_retencion(conn,turno,causa,peso_medido,peso_esperado,diferencia,
+                                           f"Placa leída: {control_placa['placa_leida']}")
+                conn.commit()
+                print(f"[PESAJE] {turno_id} -> {causa} | plaza={plaza} | "+('CREADA' if nueva else 'YA EXISTIA'))
+                return
             if resultado == "APROBADO" and canal_db != "ROJO":
                 if turno["estado"] != "Retenido":
                     conn.execute(
@@ -401,7 +418,9 @@ def on_message(client, userdata, msg):
 
 def main():
     inicializar_bd()
-    print("=== PORTUS - Servicio PESAJE v0.7 ===")
+    from fase3_db import migrar
+    migrar()
+    print("=== PORTUS - Servicio PESAJE Fase 3 ===")
     print("Pesaje fisico: Arduino Mega")
     print("Turnos/retenciones/plazas logicas: Raspberry/SQLite")
     print("Ctrl+C para salir.\n")

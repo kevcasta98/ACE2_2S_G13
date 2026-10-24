@@ -24,6 +24,8 @@
                 <option value="RT04" {% if causa_filtro == 'RT04' %}selected{% endif %}>RT04 - Fuera de ventana</option>
                 <option value="RT05" {% if causa_filtro == 'RT05' %}selected{% endif %}>RT05 - Retención documental</option>
                 <option value="RT06" {% if causa_filtro == 'RT06' %}selected{% endif %}>RT06 - Retención manual</option>
+                <option value="RT07" {% if causa_filtro == 'RT07' %}selected{% endif %}>RT07 - Placa no coincide</option>
+                <option value="RT08" {% if causa_filtro == 'RT08' %}selected{% endif %}>RT08 - Placa restringida</option>
             </select>
         </div>
         <div><button type="submit">Filtrar</button></div>
@@ -93,6 +95,8 @@
                         {% elif r.causa == 'RT04' %}Llegada fuera de ventana
                         {% elif r.causa == 'RT05' %}Retención documental
                         {% elif r.causa == 'RT06' %}Retención manual operativa
+                        {% elif r.causa == 'RT07' %}La placa leída no corresponde al RFID
+                        {% elif r.causa == 'RT08' %}Placa restringida por autoridad
                         {% endif %}
                     </div>
                     {% if r.motivo %}<div style="margin-top:5px">{{ r.motivo }}</div>{% endif %}

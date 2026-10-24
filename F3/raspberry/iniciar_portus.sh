@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PORTUS v0.9: inicia servicios sin sobrescribir base ni reprogramar Arduino.
+# PORTUS Fase 3 v1.0: inicia servicios sin sobrescribir base ni reprogramar Arduino.
 set -euo pipefail
 cd "$(dirname "$0")"
 if [[ ! -f portus.db ]]; then
@@ -10,20 +10,32 @@ if [[ ! -x venv/bin/python ]]; then
   echo 'ERROR: falta ~/portus/venv. Crea el venv y pip install -r requirements.txt.' >&2
   exit 1
 fi
+# Carga configuración ANTES de elegir el puerto (dos Arduinos pueden invertir ACM0/ACM1).
+if [[ -f .env ]]; then
+  set -a; source ./.env; set +a
+fi
+if [[ -z "${PORTUS_SERIAL_PORT:-}" ]]; then
+  shopt -s nullglob
+  puertos=(/dev/ttyACM* /dev/ttyUSB*)
+  shopt -u nullglob
+  if (( ${#puertos[@]} > 1 )); then
+    echo 'ERROR: hay múltiples puertos USB. Define PORTUS_SERIAL_PORT con /dev/serial/by-id del Mega de GARITA en .env.' >&2
+    printf '%s\n' "${puertos[@]}" >&2
+    exit 1
+  fi
+fi
 PUERTO_SERIAL="${PORTUS_SERIAL_PORT:-/dev/ttyACM0}"
 if [[ ! -e "$PUERTO_SERIAL" ]]; then
-  echo "ADVERTENCIA: $PUERTO_SERIAL no existe. Revisa USB antes de autorizar entradas." >&2
+  echo "ERROR: $PUERTO_SERIAL no existe. Revisa USB antes de autorizar entradas." >&2
   exit 1
 fi
+export PORTUS_SERIAL_PORT="$PUERTO_SERIAL"
 if ! systemctl is-active --quiet mosquitto; then
   echo 'ERROR: Mosquitto no está activo. Ejecuta: sudo systemctl start mosquitto' >&2
   exit 1
 fi
 mkdir -p .run logs
 # Solo crea el secreto la primera vez; nunca pisa uno previamente configurado.
-if [[ -f .env ]]; then
-  set -a; source ./.env; set +a
-fi
 if [[ -z "${PORTUS_SECRET_KEY:-}" ]]; then
   if [[ -f .run/secret_key ]]; then
     export PORTUS_SECRET_KEY="$(cat .run/secret_key)"
@@ -55,6 +67,7 @@ run_one persistencia_portus.py persistencia
 run_one garita_portus.py garita
 run_one pesaje_portus.py pesaje
 run_one operacion_portus.py operacion
+run_one fase3_servicio.py fase3
 # Evitar dos instancias del servidor web incluso si se llama con gunicorn u otra forma.
 if ! ./venv/bin/python - <<'PY'
 import socket

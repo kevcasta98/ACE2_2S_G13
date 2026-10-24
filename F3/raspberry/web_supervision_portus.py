@@ -13,6 +13,7 @@ from datetime import date, datetime
 from flask import Response, jsonify, redirect, render_template, request, flash, url_for, stream_with_context
 import paho.mqtt.client as mqtt
 
+from fase3_web import resumen as resumen_f3
 from supervision_portus import (estado_terminal, turnos, detalle_turno,
                                 alarmas, reconocer_alarma, patio, grua,
                                 reportes, csv_reporte)
@@ -26,7 +27,7 @@ def instalar(app, roles_required, usuario_actual, menu_para, enviar_comando_cont
     @app.get('/terminal/operacion')
     @roles_required('TERMINAL')
     def terminal_operacion():
-        return ctx('terminal_operacion.html', estado=estado_terminal())
+        return ctx('terminal_operacion.html', estado=estado_terminal(), fase3=resumen_f3())
 
     @app.get('/api/terminal/estado')
     @roles_required('TERMINAL')
@@ -45,6 +46,8 @@ def instalar(app, roles_required, usuario_actual, menu_para, enviar_comando_cont
                 if code == 0:
                     cli.subscribe('portus/evt/#', qos=0)
                     cli.subscribe('portus/cmd/respuesta', qos=0)
+                    cli.subscribe('portus/vision/#', qos=0)
+                    cli.subscribe('portus/estacion/#', qos=0)
             def on_message(cli, ud, msg):
                 try:
                     data=json.loads(msg.payload.decode('utf-8'))

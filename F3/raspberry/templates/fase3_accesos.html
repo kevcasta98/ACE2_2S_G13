@@ -1,0 +1,40 @@
+{% extends 'base.html' %}{% block title %}PORTUS - Accesos Fase 3{% endblock %}
+{% block content %}
+<section class="panel"><h2>Accesos: RFID + placa + cámara</h2>
+<p>Los ingresos con cámara fallida, placa no reconocida o sin placa registrada necesitan decisión de TERMINAL. Ninguna decisión evita las comprobaciones de manifiesto, levante y cita.</p>
+<h3>Verificaciones pendientes</h3>
+{% set pendientes = accesos|selectattr('resultado','equalto','MANUAL')|list %}
+{% if not pendientes %}<p>No hay verificaciones pendientes.</p>{% endif %}
+{% for a in pendientes %}<div class="panel">
+<h3>Intento #{{a.id}} · {{a.camion_codigo}} · {{a.timestamp}}</h3>
+<div class="grid"><div>{% if a.foto %}<a href="{{url_for('fase3_foto', acceso_id=a.id)}}"><img src="{{url_for('fase3_foto', acceso_id=a.id)}}" alt="Captura real de placa" style="max-width:100%;max-height:230px"></a>{% else %}<p>Sin fotografía disponible; verificar físicamente antes de confirmar.</p>{% endif %}</div>
+<div><p>UID: {{a.uid}}</p><p>Placa esperada: <strong>{{a.placa_esperada or 'SIN REGISTRAR'}}</strong></p>
+<p>OCR: {{a.placa_leida or 'SIN LECTURA'}} · confianza {{a.confianza or 0}}%</p>
+<form method="post" action="{{url_for('fase3_resolver_acceso',acceso_id=a.id)}}">
+<label>Decisión</label><select name="decision"><option value="RECHAZAR">Rechazar ingreso</option><option value="CONFIRMAR">Confirmar ingreso tras revisar vehículo</option></select>
+<label>Motivo (10 caracteres mínimo)</label><textarea name="motivo" required minlength="10"></textarea>
+<button type="submit">Registrar decisión</button></form></div></div></div>{% endfor %}
+</section>
+<section class="panel"><h3>Historial de lecturas (últimas 120)</h3>
+<div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Fecha</th><th>Camión / RFID</th><th>Placa esperada</th><th>Placa leída</th><th>Confianza</th><th>Resultado</th><th>Foto</th><th>Resolución</th></tr></thead><tbody>
+{% for a in accesos %}<tr><td>{{a.id}}</td><td>{{a.timestamp}}</td><td>{{a.camion_codigo}} / {{a.uid}}</td><td>{{a.placa_esperada}}</td><td>{{a.placa_leida}}</td><td>{{a.confianza}}%</td><td>{{a.resultado}} {% if a.causa_retencion %}{{a.causa_retencion}}{% endif %}</td><td>{% if a.foto %}<a href="{{url_for('fase3_foto',acceso_id=a.id)}}">Ver foto</a>{% endif %}</td><td>{{a.usuario_decision or '-'}} {{a.motivo_decision or ''}}</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="panel"><h3>Catálogo de vehículos (placas físicas reales)</h3>
+<p><strong>Importante:</strong> CAM-04 es un identificador interno, no una placa guatemalteca. Introducir aquí la placa impresa real (formato C123ABC) de cada camión. No cambiar UID durante un turno activo.</p>
+<details class="panel"><summary><strong>Agregar vehículo al catálogo</strong></summary>
+<form method="post" action="{{url_for('fase3_crear_camion')}}">
+<div class="grid"><div><label>Identificador interno</label><input name="codigo" required placeholder="CAM-07"></div>
+<div><label>Placa física impresa</label><input name="placa_vision" required pattern="C[0-9]{3}[A-Za-z]{3}" placeholder="C123ABC"></div>
+<div><label>UID RFID (8 dígitos hex)</label><input name="rfid_uid" required minlength="8" maxlength="8" placeholder="E158F3B0"></div>
+<div><label>Transportista</label><select name="transportista_id" required>{% for t in transportistas %}<option value="{{t.id}}">{{t.nombre}}</option>{% endfor %}</select></div>
+<div><label>Tara medida (g)</label><input type="number" name="tara_g" required min="0.01" step="0.01"></div>
+<div><label>Motivo de alta</label><input name="motivo" required minlength="10"></div></div>
+<button type="submit">Registrar vehículo y auditar</button></form></details>
+{% for c in camiones %}<form method="post" action="{{url_for('fase3_actualizar_camion',camion_id=c.id)}}" style="border-top:1px solid #ccc;padding:14px 0">
+<h4>{{c.placa}} — {{c.transportista}} (tara {{c.tara_g}} g)</h4>
+<div class="grid"><div><label>Placa impresa</label><input name="placa_vision" required pattern="C[0-9]{3}[A-Za-z]{3}" value="{{c.placa_vision or ''}}"></div>
+<div><label>RFID</label><input name="rfid_uid" required minlength="8" maxlength="8" value="{{c.rfid_uid}}"></div>
+<div><label>Estado</label><select name="activo"><option value="1" {% if c.activo %}selected{% endif %}>Activo</option><option value="0" {% if not c.activo %}selected{% endif %}>Inactivo</option></select></div>
+<div><label>Motivo del cambio</label><input name="motivo" required minlength="10" placeholder="Se colocó placa impresa..." ></div></div>
+<button type="submit">Actualizar y auditar</button></form>{% endfor %}</section>
+{% endblock %}
