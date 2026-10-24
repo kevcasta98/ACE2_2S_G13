@@ -10,9 +10,9 @@
 #include <time.h>
 
 // Credenciales de la red local y dirección/IP de la Raspberry con Mosquitto.
-const char* WIFI_SSID = "CAMBIAR_NOMBRE_WIFI";
-const char* WIFI_PASSWORD = "CAMBIAR_CLAVE_WIFI";
-const char* MQTT_HOST = "192.168.1.83";
+const char* WIFI_SSID = "Galaxy A15";
+const char* WIFI_PASSWORD = "Kevinysofi";
+const char* MQTT_HOST = "10.127.192.149";
 const uint16_t MQTT_PORT = 1883;
 const char* MQTT_USER = "";       // Dejar vacío si el broker no requiere usuario.
 const char* MQTT_PASSWORD = "";
